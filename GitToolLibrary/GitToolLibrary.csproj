@@ -6,12 +6,12 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Garrard.GitToolLibrary</PackageId>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
     <Description>A .NET library providing tools and utilities for working with Git repositories and GitLab projects.</Description>
     <PackageTags>git tool library</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>./README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Garrard Kitchen 2025</Copyright>
     <PackageReleaseNotes>Please refer to the README</PackageReleaseNotes>
     <PackageTags>git, gitlab, library</PackageTags>
@@ -23,7 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="../README.md">
+    <None Include="./README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>True</Pack>
+      <PackagePath>/</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../LICENSE">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>True</Pack>
       <PackagePath>/</PackagePath>

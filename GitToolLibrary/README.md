@@ -25,11 +25,23 @@ using GitToolLibrary;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         // Example usage of GitToolLibrary
-        var gitTool = new GitToolApi();
-        gitTool.CloneRepository("https://github.com/yourusername/your-repo.git", "/path/to/clone");
+
+        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
+        
+        if (projectHasBeenCreated.IsFailure)
+        {
+            Console.Writeline($"{projectHasBeenCreated.Error}. Exiting...");
+            return;
+        }
+        
+        GitToolApi.DownloadGitRepository(repoUrl, clonePath);
+        GitToolApi.CloneGitLabProject("https://github.com/yourusername/your-repo.git", "/path/to/clone");
+        GitToolApi.CopyFiles(clonePath, "/path/to/copy/to");
+        GitToolApi.CommitAndPushChanges("/path/to/commit/from", "commit message");
+        GitToolApi.RemoveTmpFolder("/path/to/remove"); 
     }
 }
 ```
