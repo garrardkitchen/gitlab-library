@@ -1,10 +1,5 @@
 ﻿using GitToolLibrary;
-using System.Diagnostics;
 using Spectre.Console;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
 class Program
@@ -19,18 +14,19 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        var gitlabPAT = configuration["GL_PAT"] ?? throw new ArgumentNullException("GL_PAT", "GitLab PAT is not set in user secrets or environment variables.");
+        var gitlabPat = configuration["GL_PAT"] ?? throw new ArgumentNullException("GL_PAT", "GitLab PAT is not set in user secrets or environment variables.");
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
             
         // prompt the user for input
         
+        AnsiConsole.MarkupLine($"[yellow][bold]Prompt for values:[/][/]");
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var rootFolder = AnsiConsole.Ask<string>("Enter the root folder for the project:",$"{homeDirectory}/source/ai");
-        var repoUrl = AnsiConsole.Ask<string>("Enter the GitLab repository URL:","https://github.com/garrardkitchen/fujitsu-pro-aspire-demo.git");
-        var clonePath = AnsiConsole.Ask<string>("Enter the local path to clone the repository:",$"{rootFolder}/tmp");
-        var commitMessage = AnsiConsole.Ask<string>("Enter the commit message:", "initial commit");
-        var newProjectName = AnsiConsole.Ask<string>("Enter the name for the new GitLab project:", "gpk-deleteme");
+        var rootFolder = AnsiConsole.Ask<string>(" - Enter the root folder for the project:",$"{homeDirectory}/source/ai");
+        var repoUrl = AnsiConsole.Ask<string>(" - Enter the GitLab repository URL:","https://github.com/garrardkitchen/fujitsu-pro-aspire-demo.git");
+        var clonePath = AnsiConsole.Ask<string>(" - Enter the local path to clone the repository:",$"{rootFolder}/tmp");
+        var commitMessage = AnsiConsole.Ask<string>(" - Enter the commit message:", "initial commit");
+        var newProjectName = AnsiConsole.Ask<string>(" - Enter the name for the new GitLab project:", "gpk-deleteme");
 
         // summary statement, with option to back out
         
@@ -55,33 +51,46 @@ class Program
         AnsiConsole.MarkupLine($"[yellow]Creating a new GitLab project named [orangered1]{newProjectName}[/][/]");
         
         // Create a new GitLab project
-        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject(newProjectName, gitlabPAT, gitlabDomain);
-        if (!projectHasBeenCreated)
+        
+        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain);
+        if (projectHasBeenCreated.IsFailure)
         {
+            AnsiConsole.MarkupLine($"[red]{projectHasBeenCreated.Error}. Exiting...[/]");
             return;
         }
-        
+
+        AnsiConsole.MarkupLine($"[green]{projectHasBeenCreated.Value}[/]");
+
         AnsiConsole.MarkupLine($"[yellow]Downloading [orangered1]{repoUrl}[/][/]");
+        
         // Download a git repository from GitLab
+        
         GitToolApi.DownloadGitRepository(repoUrl, clonePath);
 
         AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{repoUrl}[/][/]");
+        
+        // Clone the repository
 
         GitToolApi.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}");
         
         AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
 
         // Copy files from the downloaded repository to the new project
+        
         GitToolApi.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
 
         AnsiConsole.MarkupLine($"[yellow]Commit changes and pushing to [orangered1]gitlab:{newProjectName}[/][/]");
 
         // Perform a git commit and push
+        
         GitToolApi.CommitAndPushChanges($"{rootFolder}/{newProjectName}", commitMessage);
         
-        AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
+        AnsiConsole.MarkupLine($"[green]Tidying up by removing the [orangered1]{clonePath}[/] folder[/]");
         
-        // tidy up
-        // 1. delete the temporary clone
+        // Remove the temporary folder
+        
+        GitToolApi.RemoveTmpFolder(clonePath);
+        
+        AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
     }
 }

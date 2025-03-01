@@ -1,34 +1,27 @@
 ﻿using System.Diagnostics;
-using Spectre.Console;
-using System.IO;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
+using CSharpFunctionalExtensions;
 
 namespace GitToolLibrary;
 
-
 public class GitToolApi
 {
-    public static async Task<bool> CreateGitLabProject(string projectName, string pat, string gitlabDomain)
+    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain)
     {
-        var gitLabToken = AnsiConsole.Ask<string>("Enter your GitLab private token:", pat);
         var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gitLabToken);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
 
         var content = new StringContent($"{{ \"name\": \"{projectName}\" }}", System.Text.Encoding.UTF8, "application/json");
         var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
 
         if (response.IsSuccessStatusCode)
         {
-            AnsiConsole.MarkupLine("[green]Project created successfully![/]");
-            return true;
+            return Result.Success("Project created successfully!");
         }
         else
         {
-            AnsiConsole.MarkupLine("[red]Failed to create project.[/]");
-            AnsiConsole.WriteLine(await response.Content.ReadAsStringAsync());
-            return false;
+            await response.Content.ReadAsStringAsync();
+            return Result.Failure<string>("Failed to create project");
         }
     }
 
@@ -52,6 +45,14 @@ public class GitToolApi
         }
     }
 
+    public static void RemoveTmpFolder(string clonePath)
+    {
+        if (Directory.Exists(clonePath))
+        {
+            Directory.Delete(clonePath, true);
+        }
+    }
+    
     public static void CopyFiles(string sourcePath, string destinationPath)
     {
         if (!Directory.Exists(destinationPath))
