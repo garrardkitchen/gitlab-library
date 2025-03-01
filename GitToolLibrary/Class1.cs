@@ -63,7 +63,7 @@ public class GitToolApi
         {
             if (dirPath.EndsWith(".git") || dirPath.Contains(".git/"))
             {
-                Console.WriteLine(dirPath);
+                //Console.WriteLine(dirPath);
                 continue;
             }
 
@@ -74,7 +74,7 @@ public class GitToolApi
         {
             if (newPath.EndsWith(".git") || newPath.Contains(".git/"))
             {
-                Console.WriteLine(newPath);
+                //Console.WriteLine(newPath);
                 continue;
             }
             File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
