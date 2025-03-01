@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using GitToolLibrary;
+using System.Diagnostics;
 using Spectre.Console;
 using System.IO;
 using System.Net.Http;
@@ -9,7 +10,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-
         var gitlabPAT = Environment.GetEnvironmentVariable("GL_PAT");
         var gitlabDomain = Environment.GetEnvironmentVariable("GL_DOMAIN");
         var gitlabNamespace = Environment.GetEnvironmentVariable("GL_NAMESPACE");
@@ -18,155 +18,31 @@ class Program
         var commitMessage = AnsiConsole.Ask<string>("Enter the commit message:", "initial commit");
         var newProjectName = AnsiConsole.Ask<string>("Enter the name for the new GitLab project:", "gpk-deleteme");
 
-        AnsiConsole.MarkupLine($"[bold]Creating a new GitLab project named {newProjectName}[/]");
+        AnsiConsole.MarkupLine($"[yellow]Creating a new GitLab project named {newProjectName}[/]");
         
         // Create a new GitLab project
-        var projectHasBeenCreated = await CreateGitLabProject(newProjectName, gitlabPAT, gitlabDomain);
+        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject(newProjectName, gitlabPAT, gitlabDomain);
         if (!projectHasBeenCreated)
         {
             return;
         }
         
-        AnsiConsole.MarkupLine($"[bold]Downloading {repoUrl}[/]");
+        AnsiConsole.MarkupLine($"[yellow]Downloading {repoUrl}[/]");
         // Download a git repository from GitLab
-        DownloadGitRepository(repoUrl, clonePath);
+        GitToolApi.DownloadGitRepository(repoUrl, clonePath);
 
-        AnsiConsole.MarkupLine($"[bold]Cloning {repoUrl}[/]");
+        AnsiConsole.MarkupLine($"[yellow]Cloning {repoUrl}[/]");
 
-        CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"/Users/garrardkitchen/source/ai/{newProjectName}");
+        GitToolApi.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"/Users/garrardkitchen/source/ai/{newProjectName}");
         
+        AnsiConsole.MarkupLine($"[yellow]Copying files from {clonePath} into {newProjectName}[/]");
+
         // Copy files from the downloaded repository to the new project
-        CopyFiles(clonePath, $"/Users/garrardkitchen/source/ai/{newProjectName}");
+        GitToolApi.CopyFiles(clonePath, $"/Users/garrardkitchen/source/ai/{newProjectName}");
+
+        AnsiConsole.MarkupLine($"[yellow]Commit changes and pushing to gitlab:{newProjectName}[/]");
 
         // Perform a git commit and push
-        CommitAndPushChanges($"/Users/garrardkitchen/source/ai/{newProjectName}", commitMessage);
-    }
-
-    static async Task<bool> CreateGitLabProject(string projectName, string pat, string gitlabDomain)
-    {
-        var gitLabToken = AnsiConsole.Ask<string>("Enter your GitLab private token:", pat);
-        var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", gitLabToken);
-
-        var content = new StringContent($"{{ \"name\": \"{projectName}\" }}", System.Text.Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
-
-        if (response.IsSuccessStatusCode)
-        {
-            AnsiConsole.MarkupLine("[green]Project created successfully![/]");
-            return true;
-        }
-        else
-        {
-            AnsiConsole.MarkupLine("[red]Failed to create project.[/]");
-            AnsiConsole.WriteLine(await response.Content.ReadAsStringAsync());
-            return false;
-        }
-    }
-
-    static void DownloadGitRepository(string repoUrl, string clonePath)
-    {
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = "git",
-            Arguments = $"clone {repoUrl} {clonePath}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
-    }
-
-    static void CopyFiles(string sourcePath, string destinationPath)
-    {
-        if (!Directory.Exists(destinationPath))
-        {
-            Directory.CreateDirectory(destinationPath);
-        }
-
-        foreach (var dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
-        {
-           
-            if (dirPath.EndsWith(".git") || dirPath.Contains(".git/"))
-            {
-                Console.WriteLine(dirPath);
-                continue;
-            }
-
-            Directory.CreateDirectory(dirPath.Replace(sourcePath, destinationPath));
-        }
-
-        foreach (var newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-        {
-            if (newPath.EndsWith(".git") || newPath.Contains(".git/"))
-            {
-                Console.WriteLine(newPath);
-                continue;
-            }
-            File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
-        }
-    }
-
-    static void CommitAndPushChanges(string repoPath, string commitMessage)
-    {
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = "git",
-            Arguments = $"-C {repoPath} add .",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
-
-        startInfo.Arguments = $"-C {repoPath} commit -m \"{commitMessage}\"";
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
-
-        startInfo.Arguments = $"-C {repoPath} push";
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
-    }
-
-    static void CloneGitLabProject(string repoUrl, string clonePath)
-    {
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = "git",
-            Arguments = $"clone {repoUrl} {clonePath}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
+        GitToolApi.CommitAndPushChanges($"/Users/garrardkitchen/source/ai/{newProjectName}", commitMessage);
     }
 }
