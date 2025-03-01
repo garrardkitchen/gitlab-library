@@ -22,12 +22,12 @@ jobs:
       run: dotnet restore
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore --project GitToolLibrary/GitToolLibrary.csproj
 
     - name: Pack
-      run: dotnet pack --configuration Release --no-build
+      run: dotnet pack --configuration Release --no-build --project GitToolLibrary/GitToolLibrary.csproj
 
     - name: Publish to NuGet
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: dotnet nuget push **/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push GitToolLibrary/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json

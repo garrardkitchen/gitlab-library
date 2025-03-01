@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>GitToolLibrary</PackageId>
+    <PackageId>Garrard.GitToolLibrary</PackageId>
     <Version>0.0.1</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
@@ -14,9 +14,12 @@
     <RepositoryUrl>https://github.com/garrardkitchen/gitlab-library</RepositoryUrl>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CSharpFunctionalExtensions" Version="3.5.1" />
-    <PackageReference Include="Spectre.Console" Version="0.49.1" />
   </ItemGroup>
 
 </Project>
