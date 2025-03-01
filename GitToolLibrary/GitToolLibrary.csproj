@@ -6,20 +6,28 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Garrard.GitToolLibrary</PackageId>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
     <Description>A .NET library providing tools and utilities for working with Git repositories and GitLab projects.</Description>
     <PackageTags>git tool library</PackageTags>
-    <RepositoryUrl>https://github.com/garrardkitchen/gitlab-library</RepositoryUrl>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) Garrard Kitchen 2025</Copyright>
+    <PackageReleaseNotes>Please refer to the README</PackageReleaseNotes>
+    <PackageTags>git, gitlab, library</PackageTags>
+    <RepositoryUrl>https://github.com/garrardkitchen/gitlab-library</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CSharpFunctionalExtensions" Version="3.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>True</Pack>
+      <PackagePath>/</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
