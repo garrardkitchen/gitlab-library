@@ -52,15 +52,22 @@ class Program
         
         // Create a new GitLab project
         
-        var projectHasBeenCreated = await GitOperations.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain);
-        if (projectHasBeenCreated.IsFailure)
+        var projectCreation = await GitOperations.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain,
+            projectName =>
+            {
+                AnsiConsole.MarkupLine($"[yellow] - [orangered1]{projectName}[/] exists, establishing an available project name...[/]");
+            });
+        if (projectCreation.IsFailure)
         {
-            AnsiConsole.MarkupLine($"[red]{projectHasBeenCreated.Error}. Exiting...[/]");
+            AnsiConsole.MarkupLine($"[red]{projectCreation.Error}. Exiting...[/]");
             return;
         }
 
-        AnsiConsole.MarkupLine($"[green]{projectHasBeenCreated.Value}[/]");
+        // will use the new name
+        newProjectName = projectCreation.Value;
 
+        AnsiConsole.MarkupLine($"[green][bold]{newProjectName}[/] has been created![/]");
+        
         AnsiConsole.MarkupLine($"[yellow]Downloading [orangered1]{repoUrl}[/][/]");
         
         // Download a git repository from GitLab
