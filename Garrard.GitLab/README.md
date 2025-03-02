@@ -19,7 +19,7 @@ Or add the following package reference to your project file:
 Or user the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.3
+dotnet add package Garrard.GitLab --version 0.0.4
 ```
 
 ## Usage
@@ -35,11 +35,11 @@ class Program
     {
         // Example usage of GitLab.GitOperations, GitLab.FileOperations
 
-        var projectHasBeenCreated = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
+        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
         
-        if (projectHasBeenCreated.IsFailure)
+        if (projectCreation.IsFailure)
         {
-            Console.Writeline($"{projectHasBeenCreated.Error}. Exiting...");
+            Console.Writeline($"{projectCreation.Error}. Exiting...");
             return;
         }
         
