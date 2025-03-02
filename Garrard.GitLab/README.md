@@ -1,10 +1,10 @@
-# GitToolLibrary
+# Garrard.GitLab
 
-GitToolLibrary is a .NET library that provides tools for working with Git repositories. It includes various utilities and functions to simplify common Git operations.
+Garrard.GitLab is a .NET library that provides operations for working with GitLab projects.
 
 ## Installation
 
-To install GitToolLibrary, you can use the NuGet package manager. Run the following command in the Package Manager Console:
+To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
 Install-Package Garrard.GitLab -Version 0.0.4
@@ -16,9 +16,15 @@ Or add the following package reference to your project file:
 <PackageReference Include="Garrard.GitLab" Version="0.0.4" />
 ```
 
+Or user the dotnet add command:
+
+```powershell
+dotnet add package Garrard.GitLab --version 0.0.3
+```
+
 ## Usage
 
-Here is an example of how to use GitToolLibrary in your project:
+Here is an example of how to use Garrard.GitLab in your project:
 
 ```csharp
 using Garrard.GitLab;
@@ -51,8 +57,10 @@ class Program
 - Clone Git repositories
 - Create branches
 - Commit changes
+- Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
 - Push changes
 - Fetch and pull updates
+- Remove temporary folder
 
 ## Contributing
 
@@ -60,4 +68,4 @@ Contributions are welcome! Please open an issue or submit a pull request on GitH
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/garrardkitchen/gitlab-library/blob/feat/kitcheng/rename/LICENSE) file for more details.

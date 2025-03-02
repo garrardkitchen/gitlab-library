@@ -9,7 +9,7 @@
     <Version>0.0.3</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
-    <Description>A .NET library providing tools and utilities for working with Git repositories and GitLab projects.</Description>
+    <Description>.NET library that provides operations for working with GitLab projects.</Description>
     <PackageTags>git tool library</PackageTags>
     <PackageReadmeFile>./README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Garrard Kitchen 2025</Copyright>
