@@ -24,9 +24,10 @@ class Program
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var rootFolder = AnsiConsole.Ask<string>(" - Enter the root folder for the project:",$"{homeDirectory}/source/ai");
         var repoUrl = AnsiConsole.Ask<string>(" - Enter the GitLab repository URL:","https://github.com/garrardkitchen/fujitsu-pro-aspire-demo.git");
-        var clonePath = AnsiConsole.Ask<string>(" - Enter the local path to clone the repository:",$"{rootFolder}/tmp");
         var commitMessage = AnsiConsole.Ask<string>(" - Enter the commit message:", "initial commit");
         var newProjectName = AnsiConsole.Ask<string>(" - Enter the name for the new GitLab project:", "gpk-deleteme");
+        var clonePath = AnsiConsole.Ask<string>(" - Enter the local path to clone the repository:",$"{rootFolder}/{newProjectName}-tmp");
+        var branchName = AnsiConsole.Ask<string>(" - Enter a branch name (if empty, it'll use your mainline branch)", "");
 
         // summary statement, with option to back out
         
@@ -35,6 +36,7 @@ class Program
         AnsiConsole.MarkupLine($" - [yellow]Create a new GitLab Project called [orangered1]{newProjectName}[/][/]");
         AnsiConsole.MarkupLine($" - [yellow]Clone [orangered1]{repoUrl}[/] to folder [greenyellow]{clonePath}[/][/]");
         AnsiConsole.MarkupLine($" - [yellow]Copy files (except .git/) from [greenyellow]{clonePath}[/] to [orangered1]{rootFolder}/{newProjectName}[/][/]");
+        AnsiConsole.MarkupLine(" - [yellow]Branch [orangered1]{0}[/][/]", string.IsNullOrEmpty(branchName) ? "(mainline)" : branchName);
         AnsiConsole.MarkupLine($" - [yellow]Commit and push cloned repo to [orangered1]{newProjectName}[/][/]");
         
         var confirmToContinue = AnsiConsole.Prompt(
@@ -90,13 +92,13 @@ class Program
 
         // Perform a git commit and push
         
-        GitOperations.CommitAndPushChanges($"{rootFolder}/{newProjectName}", commitMessage);
+        GitOperations.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", commitMessage, branchName);
         
         AnsiConsole.MarkupLine($"[green]Tidying up by removing the [orangered1]{clonePath}[/] folder[/]");
         
         // Remove the temporary folder
         
-        FileOperations.RemoveTmpFolder(clonePath);
+        FileOperations.RemoveTempFolder(clonePath);
         
         AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
     }

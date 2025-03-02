@@ -4,7 +4,7 @@ namespace Garrard.GitLab;
 
 public class FileOperations
 {
-    public static void RemoveTmpFolder(string clonePath)
+    public static void RemoveTempFolder(string clonePath)
     {
         if (Directory.Exists(clonePath))
         {

@@ -66,18 +66,71 @@ public class GitOperations
         }
     }
 
-    public static void CommitAndPushChanges(string repoPath, string commitMessage)
+    public static void CreateBranch(string repoPath, string branchName)
     {
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "git",
-            Arguments = $"-C {repoPath} add .",
+            Arguments = $"-C {repoPath} checkout -b {branchName}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
 
+        using (Process process = Process.Start(startInfo)!)
+        {
+            process.WaitForExit();
+            Console.WriteLine(process.StandardOutput.ReadToEnd());
+            Console.WriteLine(process.StandardError.ReadToEnd());
+        }
+    }
+
+    public static void PushChanges(string repoPath, string? branchName = null)
+    {
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        if (string.IsNullOrEmpty(branchName))
+        {
+            startInfo.Arguments = $"-C {repoPath} push";
+        }
+        else
+        {
+            startInfo.Arguments = $"-C {repoPath} push -u origin {branchName}";
+        }
+        
+        using (Process process = Process.Start(startInfo)!)
+        {
+            process.WaitForExit();
+            Console.WriteLine(process.StandardOutput.ReadToEnd());
+            Console.WriteLine(process.StandardError.ReadToEnd());
+        }
+    }
+
+    public static void BranchCommitPushChanges(string repoPath, string commitMessage, string? branchName = null)
+    {
+        if (branchName != null)
+        {
+            CreateBranch(repoPath, branchName);
+        }
+
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        startInfo.Arguments = $"-C {repoPath} add .";
         using (Process process = Process.Start(startInfo)!)
         {
             process.WaitForExit();
@@ -93,13 +146,7 @@ public class GitOperations
             Console.WriteLine(process.StandardError.ReadToEnd());
         }
 
-        startInfo.Arguments = $"-C {repoPath} push";
-        using (Process process = Process.Start(startInfo)!)
-        {
-            process.WaitForExit();
-            Console.WriteLine(process.StandardOutput.ReadToEnd());
-            Console.WriteLine(process.StandardError.ReadToEnd());
-        }
+        PushChanges(repoPath, branchName);
     }
 
     public static void CloneGitLabProject(string repoUrl, string clonePath)

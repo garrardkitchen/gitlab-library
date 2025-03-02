@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.6
+Install-Package Garrard.GitLab -Version 0.0.7
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.6" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.7" />
 ```
 
 Or user the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.6
+dotnet add package Garrard.GitLab --version 0.0.7
 ```
 
 ## Usage
@@ -52,8 +52,8 @@ class Program
         GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to");
         GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
-        GitOperations.CommitAndPushChanges("/path/to/clone", "commit message");
-        FileOperations.RemoveTmpFolder("/path/to/download/to"); 
+        GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branchname");
+        FileOperations.RemoveTempFolder("/path/to/download/to"); 
     }
 }
 ```
