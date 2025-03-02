@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.9
+Install-Package Garrard.GitLab -Version 0.0.10
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.9" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.10" />
 ```
 
-Or user the dotnet add command:
+Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.9
+dotnet add package Garrard.GitLab --version 0.0.10
 ```
 
 ## Usage
@@ -37,19 +37,19 @@ class Program
 
         var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "gitlab-domain", projectName =>
             {
-                Console.Writeline($" - {projectName} exists, establishing an available project name...");
+                Console.WriteLine($" - {projectName} exists, establishing an available project name...");
             }, "group-id-or-omit-to-add-to-users-namespace");
         
         if (projectCreation.IsFailure)
         {
-            Console.Writeline($"{projectCreation.Error}. Exiting...");
+            Console.WriteLine($"{projectCreation.Error}. Exiting...");
             return;
         }
         
         // will use the new name (will have changed if couldn't use the original name)
         newProjectName = projectCreation.Value;
         
-        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name);
+        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name");
         GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
         GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name-or-omit-to-use-mainline-branch");
@@ -61,13 +61,13 @@ class Program
 ## Features
 
 - Create a new GitLab project 
-  - It will create a unique project (by incrementing a number after you suggested name) if your suggested name exists
+  - It will create a unique project (by incrementing a number after your suggested name) if your suggested name exists
   - It will by default add the project to your user's namespace. If you supply a groupID, it will
     add the project to this group instead
-- Download a existing git repository (can provide branch name)
+- Download an existing git repository (can provide branch name)
 - Clone GitLab project
 - Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
-- Branch (optional), Commit and pushes changes
+- Branch (optional), Commit and push changes
 - Remove temporary folder
 
 ## Contributing
