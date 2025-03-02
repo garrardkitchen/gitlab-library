@@ -46,12 +46,12 @@ public class GitOperations
         }
     }
 
-    public static void DownloadGitRepository(string repoUrl, string clonePath)
+    public static void DownloadGitRepository(string repoUrl, string clonePath, string? branchName = null)
     {
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "git",
-            Arguments = $"clone {repoUrl} {clonePath}",
+            Arguments = branchName == null ? $"clone {repoUrl} {clonePath}" : $"clone -b {branchName} {repoUrl} {clonePath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.7
+Install-Package Garrard.GitLab -Version 0.0.8
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.7" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.8" />
 ```
 
 Or user the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.7
+dotnet add package Garrard.GitLab --version 0.0.8
 ```
 
 ## Usage
@@ -49,10 +49,10 @@ class Program
         // will use the new name (will have changed if couldn't use the original name)
         newProjectName = projectCreation.Value;
         
-        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to");
+        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name);
         GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
-        GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branchname");
+        GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name");
         FileOperations.RemoveTempFolder("/path/to/download/to"); 
     }
 }
@@ -61,10 +61,10 @@ class Program
 ## Features
 
 - Create a new GitLab project (will create a unique project if your suggeted name exists)
-- Download a existing git repository
+- Download a existing git repository (can provide branch name)
 - Clone GitLab project
 - Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
-- Commit and pushes changes
+- Branch (optional), Commit and pushes changes
 - Remove temporary folder
 
 ## Contributing
