@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.5
+Install-Package Garrard.GitLab -Version 0.0.6
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.5" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.6" />
 ```
 
 Or user the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.5
+dotnet add package Garrard.GitLab --version 0.0.6
 ```
 
 ## Usage
@@ -35,13 +35,19 @@ class Program
     {
         // Example usage of GitLab.GitOperations, GitLab.FileOperations
 
-        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "gitlab-domain");
+        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "gitlab-domain", projectName =>
+            {
+                Console.Writeline($" - {projectName} exists, establishing an available project name...");
+            });
         
         if (projectCreation.IsFailure)
         {
             Console.Writeline($"{projectCreation.Error}. Exiting...");
             return;
         }
+        
+        // will use the new name (will have changed if couldn't use the original name)
+        newProjectName = projectCreation.Value;
         
         GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to");
         GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
@@ -54,12 +60,11 @@ class Program
 
 ## Features
 
-- Clone Git repositories
-- Create branches
-- Commit changes
+- Create a new GitLab project (will create a unique project if your suggeted name exists)
+- Download a existing git repository
+- Clone GitLab project
 - Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
-- Push changes
-- Fetch and pull updates
+- Commit and pushes changes
 - Remove temporary folder
 
 ## Contributing

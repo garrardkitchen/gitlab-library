@@ -6,17 +6,38 @@ namespace Garrard.GitLab;
 
 public class GitOperations
 {
-    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain)
+    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists)
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
 
-        var content = new StringContent($"{{ \"name\": \"{projectName}\" }}", System.Text.Encoding.UTF8, "application/json");
+        int suffix = 0;
+        string newProjectName = projectName;
+        while (true)
+        {
+            var checkResponse = await client.GetAsync($"https://{gitlabDomain}/api/v4/projects?search={newProjectName}");
+            if (checkResponse.IsSuccessStatusCode)
+            {
+                var found = await checkResponse.Content.ReadAsStringAsync();
+
+                if (found.Contains(newProjectName))
+                {
+                    onProjectExists(newProjectName);
+                    suffix++;
+                    newProjectName = $"{projectName}-{suffix}";
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        var content = new StringContent($"{{ \"name\": \"{newProjectName}\" }}", System.Text.Encoding.UTF8, "application/json");
         var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
 
         if (response.IsSuccessStatusCode)
         {
-            return Result.Success("Project created successfully!");
+            return Result.Success($"{newProjectName}");
         }
         else
         {
