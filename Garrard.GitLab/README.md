@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.4
+Install-Package Garrard.GitLab -Version 0.0.5
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.4" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.5" />
 ```
 
 Or user the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.4
+dotnet add package Garrard.GitLab --version 0.0.5
 ```
 
 ## Usage
@@ -35,7 +35,7 @@ class Program
     {
         // Example usage of GitLab.GitOperations, GitLab.FileOperations
 
-        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
+        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "gitlab-domain");
         
         if (projectCreation.IsFailure)
         {
@@ -43,11 +43,11 @@ class Program
             return;
         }
         
-        GitOperations.DownloadGitRepository(repoUrl, clonePath);
-        GitOperations.CloneGitLabProject("https://github.com/yourusername/your-repo.git", "/path/to/clone");
-        FileOperations.CopyFiles(clonePath, "/path/to/copy/to");
-        GitOperations.CommitAndPushChanges("/path/to/commit/from", "commit message");
-        FileOperations.RemoveTmpFolder("/path/to/remove"); 
+        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to");
+        GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
+        FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
+        GitOperations.CommitAndPushChanges("/path/to/clone", "commit message");
+        FileOperations.RemoveTmpFolder("/path/to/download/to"); 
     }
 }
 ```
