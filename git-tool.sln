@@ -2,9 +2,9 @@
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "git-tool", "git-tool\git-tool.csproj", "{D191A980-BD1D-219A-97E1-316523CB793C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Garrard.GitLab.Sample", "Garrard.GitLab.Sample\Garrard.GitLab.Sample.csproj", "{D191A980-BD1D-219A-97E1-316523CB793C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitToolLibrary", "GitToolLibrary\GitToolLibrary.csproj", "{5ACD8071-350E-47AD-ACDA-D75D63D3A0C7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Garrard.GitLab", "Garrard.GitLab\Garrard.GitLab.csproj", "{5ACD8071-350E-47AD-ACDA-D75D63D3A0C7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

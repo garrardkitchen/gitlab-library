@@ -13,7 +13,7 @@ Install-Package GitToolLibrary -Version 1.0.0
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="GitToolLibrary" Version="1.0.0" />
+<PackageReference Include="GitToolLibrary" Version="0.0.4" />
 ```
 
 ## Usage
@@ -21,15 +21,15 @@ Or add the following package reference to your project file:
 Here is an example of how to use GitToolLibrary in your project:
 
 ```csharp
-using GitToolLibrary;
+using Garrard.GitLab;
 
 class Program
 {
     static async Task Main(string[] args)
     {
-        // Example usage of GitToolLibrary
+        // Example usage of GitLab.GitOperations, GitLab.FileOperations
 
-        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
+        var projectHasBeenCreated = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "domain-name-of-gitlab-instance");
         
         if (projectHasBeenCreated.IsFailure)
         {
@@ -37,11 +37,11 @@ class Program
             return;
         }
         
-        GitToolApi.DownloadGitRepository(repoUrl, clonePath);
-        GitToolApi.CloneGitLabProject("https://github.com/yourusername/your-repo.git", "/path/to/clone");
-        GitToolApi.CopyFiles(clonePath, "/path/to/copy/to");
-        GitToolApi.CommitAndPushChanges("/path/to/commit/from", "commit message");
-        GitToolApi.RemoveTmpFolder("/path/to/remove"); 
+        GitOperations.DownloadGitRepository(repoUrl, clonePath);
+        GitOperations.CloneGitLabProject("https://github.com/yourusername/your-repo.git", "/path/to/clone");
+        FileOperations.CopyFiles(clonePath, "/path/to/copy/to");
+        GitOperations.CommitAndPushChanges("/path/to/commit/from", "commit message");
+        FileOperations.RemoveTmpFolder("/path/to/remove"); 
     }
 }
 ```

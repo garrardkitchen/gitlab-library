@@ -1,4 +1,4 @@
-﻿using GitToolLibrary;
+﻿using Garrard.GitLab;
 using Spectre.Console;
 using Microsoft.Extensions.Configuration;
 
@@ -52,7 +52,7 @@ class Program
         
         // Create a new GitLab project
         
-        var projectHasBeenCreated = await GitToolApi.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain);
+        var projectHasBeenCreated = await GitOperations.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain);
         if (projectHasBeenCreated.IsFailure)
         {
             AnsiConsole.MarkupLine($"[red]{projectHasBeenCreated.Error}. Exiting...[/]");
@@ -65,31 +65,31 @@ class Program
         
         // Download a git repository from GitLab
         
-        GitToolApi.DownloadGitRepository(repoUrl, clonePath);
+        GitOperations.DownloadGitRepository(repoUrl, clonePath);
 
         AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{repoUrl}[/][/]");
         
         // Clone the repository
 
-        GitToolApi.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}");
+        GitOperations.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}");
         
         AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
 
         // Copy files from the downloaded repository to the new project
         
-        GitToolApi.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
+        FileOperations.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
 
         AnsiConsole.MarkupLine($"[yellow]Commit changes and pushing to [orangered1]gitlab:{newProjectName}[/][/]");
 
         // Perform a git commit and push
         
-        GitToolApi.CommitAndPushChanges($"{rootFolder}/{newProjectName}", commitMessage);
+        GitOperations.CommitAndPushChanges($"{rootFolder}/{newProjectName}", commitMessage);
         
         AnsiConsole.MarkupLine($"[green]Tidying up by removing the [orangered1]{clonePath}[/] folder[/]");
         
         // Remove the temporary folder
         
-        GitToolApi.RemoveTmpFolder(clonePath);
+        FileOperations.RemoveTmpFolder(clonePath);
         
         AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
     }

@@ -1,9 +1,9 @@
-name: Publish to NuGet
+name: Continuous Integration
 
 on:
   push:
     branches:
-      - main
+      - !main
 
 jobs:
   build:
@@ -24,10 +24,10 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore Garrard.GitLab/Garrard.GitLab.csproj
 
+    - name: Test
+      run: dotnet test --configuration Release --no-restore Garrard.GitLab/Garrard.GitLab.csproj
+
     - name: Pack
       run: dotnet pack --configuration Release --no-build  Garrard.GitLab/Garrard.GitLab.csproj
 
-    - name: Publish to NuGet
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: dotnet nuget push Garrard.GitLab/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+  

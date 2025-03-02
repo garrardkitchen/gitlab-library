@@ -2,9 +2,9 @@
 using System.Net.Http.Headers;
 using CSharpFunctionalExtensions;
 
-namespace GitToolLibrary;
+namespace Garrard.GitLab;
 
-public class GitToolApi
+public class GitOperations
 {
     public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain)
     {
@@ -42,43 +42,6 @@ public class GitToolApi
             process.WaitForExit();
             Console.WriteLine(process.StandardOutput.ReadToEnd());
             Console.WriteLine(process.StandardError.ReadToEnd());
-        }
-    }
-
-    public static void RemoveTmpFolder(string clonePath)
-    {
-        if (Directory.Exists(clonePath))
-        {
-            Directory.Delete(clonePath, true);
-        }
-    }
-    
-    public static void CopyFiles(string sourcePath, string destinationPath)
-    {
-        if (!Directory.Exists(destinationPath))
-        {
-            Directory.CreateDirectory(destinationPath);
-        }
-
-        foreach (var dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
-        {
-            if (dirPath.EndsWith(".git") || dirPath.Contains(".git/"))
-            {
-                //Console.WriteLine(dirPath);
-                continue;
-            }
-
-            Directory.CreateDirectory(dirPath.Replace(sourcePath, destinationPath));
-        }
-
-        foreach (var newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-        {
-            if (newPath.EndsWith(".git") || newPath.Contains(".git/"))
-            {
-                //Console.WriteLine(newPath);
-                continue;
-            }
-            File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
         }
     }
 
