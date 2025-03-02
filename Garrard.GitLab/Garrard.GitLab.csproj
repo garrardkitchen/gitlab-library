@@ -5,17 +5,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Garrard.GitToolLibrary</PackageId>
+    <PackageId>Garrard.GitLab</PackageId>
     <Version>0.0.3</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
-    <Description>A .NET library providing tools and utilities for working with Git repositories and GitLab projects.</Description>
+    <Description>.NET library that provides operations for working with GitLab projects.</Description>
     <PackageTags>git tool library</PackageTags>
     <PackageReadmeFile>./README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Garrard Kitchen 2025</Copyright>
     <PackageReleaseNotes>Please refer to the README</PackageReleaseNotes>
     <PackageTags>git, gitlab, library</PackageTags>
     <RepositoryUrl>https://github.com/garrardkitchen/gitlab-library</RepositoryUrl>
+    <RootNamespace>Garrard.GitLab</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GitToolLibrary\GitToolLibrary.csproj" />
+    <ProjectReference Include="..\Garrard.GitLab\Garrard.GitLab.csproj" />
   </ItemGroup>
 
 </Project>
