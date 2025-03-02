@@ -6,7 +6,7 @@ namespace Garrard.GitLab;
 
 public class GitOperations
 {
-    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists)
+    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null)
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
@@ -32,7 +32,7 @@ public class GitOperations
             }
         }
 
-        var content = new StringContent($"{{ \"name\": \"{newProjectName}\" }}", System.Text.Encoding.UTF8, "application/json");
+        var content = new StringContent(groupId == null ? $"{{ \"name\": \"{newProjectName}\" }}" : $"{{ \"name\": \"{newProjectName}\", \"namespace_id\": \"{groupId}\" }}", System.Text.Encoding.UTF8, "application/json");
         var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
 
         if (response.IsSuccessStatusCode)
