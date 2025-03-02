@@ -7,13 +7,13 @@ GitToolLibrary is a .NET library that provides tools for working with Git reposi
 To install GitToolLibrary, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```
-Install-Package GitToolLibrary -Version 1.0.0
+Install-Package Garrard.GitLab -Version 0.0.4
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="GitToolLibrary" Version="0.0.4" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.4" />
 ```
 
 ## Usage
