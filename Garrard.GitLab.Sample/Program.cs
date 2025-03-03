@@ -66,9 +66,10 @@ class Program
         }
 
         // will use the new name
-        newProjectName = projectCreation.Value;
+        
+        newProjectName = projectCreation.Value.Name;
 
-        AnsiConsole.MarkupLine($"[green][bold]{newProjectName}[/] has been created![/]");
+        AnsiConsole.MarkupLine($"[green][bold]{newProjectName}({projectCreation.Value.Id})[/] has been created![/]");
         
         AnsiConsole.MarkupLine($"[yellow]Downloading [orangered1]{repoUrl}[/][/]");
         
@@ -76,11 +77,11 @@ class Program
         
         GitOperations.DownloadGitRepository(repoUrl, clonePath, pat: gitlabPat);
 
-        AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{repoUrl}[/][/]");
+        AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{projectCreation.Value.HttpUrlToRepo}[/][/]");
         
         // Clone the repository
 
-        GitOperations.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}", pat: gitlabPat);
+        GitOperations.CloneGitLabProject($"{projectCreation.Value.HttpUrlToRepo}", $"{rootFolder}/{newProjectName}", pat: gitlabPat);
         
         AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
 

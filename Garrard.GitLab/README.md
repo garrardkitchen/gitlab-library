@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.11
+Install-Package Garrard.GitLab -Version 0.0.12
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.11" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.12" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.11
+dotnet add package Garrard.GitLab --version 0.0.12
 ```
 
 ## Usage
@@ -47,10 +47,10 @@ class Program
         }
         
         // will use the new name (will have changed if couldn't use the original name)
-        newProjectName = projectCreation.Value;
+        newProjectName = projectCreation.Value.Name;
         
         GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name", "pat");
-        GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone", "pat");
+        GitOperations.CloneGitLabProject(projectCreation.Value.HttpUrlToRepo, "/path/to/clone", "pat");
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
         GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name-or-omit-to-use-mainline-branch");
         FileOperations.RemoveTempFolder("/path/to/download/to"); 
@@ -64,6 +64,7 @@ class Program
   - It will create a unique project (by incrementing a number after your suggested name) if your suggested name exists
   - It will by default add the project to your user's namespace. If you supply a groupID, it will
     add the project to this group instead
+  - Returns a tuple of (Id, Name, HttpUrlToRepo and PathWithNamespace)
 - Download an existing git repository 
   - You can provide branch name
   - You can provide a PAT (uses oauth2)

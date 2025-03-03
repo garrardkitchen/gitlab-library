@@ -4,9 +4,17 @@ using CSharpFunctionalExtensions;
 
 namespace Garrard.GitLab;
 
+public class GitLabProjectDto
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string HttpUrlToRepo { get; set; }
+    public string PathWithNamespace { get; set; }
+}
+
 public class GitOperations
 {
-    public static async Task<Result<string>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null)
+    public static async Task<Result<(string Id, string Name, string HttpUrlToRepo, string PathWithNamespace)>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null)
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
@@ -37,12 +45,20 @@ public class GitOperations
 
         if (response.IsSuccessStatusCode)
         {
-            return Result.Success($"{newProjectName}");
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var jsonResponse = System.Text.Json.JsonDocument.Parse(responseBody);
+            var projectDetails = (
+                Id: jsonResponse.RootElement.GetProperty("id").GetInt16().ToString(),
+                Name: newProjectName,
+                HttpUrlToRepo: jsonResponse.RootElement.GetProperty("http_url_to_repo").GetString(),
+                PathWithNamespace: jsonResponse.RootElement.GetProperty("path_with_namespace").GetString()
+            );
+            return Result.Success(projectDetails);
         }
         else
         {
             await response.Content.ReadAsStringAsync();
-            return Result.Failure<string>("Failed to create project");
+            return Result.Failure<(string, string, string, string)>("Failed to create project");
         }
     }
 
