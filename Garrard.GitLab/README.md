@@ -49,8 +49,8 @@ class Program
         // will use the new name (will have changed if couldn't use the original name)
         newProjectName = projectCreation.Value;
         
-        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name");
-        GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone");
+        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name", "pat");
+        GitOperations.CloneGitLabProject("https://gitlab.com/yourusername/your-project.git", "/path/to/clone", "pat");
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
         GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name-or-omit-to-use-mainline-branch");
         FileOperations.RemoveTempFolder("/path/to/download/to"); 
