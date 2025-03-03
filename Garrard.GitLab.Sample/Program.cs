@@ -74,13 +74,13 @@ class Program
         
         // Download a git repository from GitLab
         
-        GitOperations.DownloadGitRepository(repoUrl, clonePath);
+        GitOperations.DownloadGitRepository(repoUrl, clonePath, pat: gitlabPat);
 
         AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{repoUrl}[/][/]");
         
         // Clone the repository
 
-        GitOperations.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}");
+        GitOperations.CloneGitLabProject($"https://{gitlabDomain}/{gitlabNamespace}/{newProjectName}.git", $"{rootFolder}/{newProjectName}", pat: gitlabPat);
         
         AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
 

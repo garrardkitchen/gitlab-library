@@ -46,8 +46,14 @@ public class GitOperations
         }
     }
 
-    public static void DownloadGitRepository(string repoUrl, string clonePath, string? branchName = null)
+    public static void DownloadGitRepository(string repoUrl, string clonePath, string? branchName = null, string? pat = null)
     {
+        if (!string.IsNullOrEmpty(pat))
+        {
+            var uri = new Uri(repoUrl);
+            repoUrl = $"{uri.Scheme}://oauth2:{pat}@{uri.Host}{uri.PathAndQuery}";
+        }
+
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "git",
@@ -116,7 +122,7 @@ public class GitOperations
 
     public static void BranchCommitPushChanges(string repoPath, string commitMessage, string? branchName = null)
     {
-        if (branchName != null)
+        if (!string.IsNullOrEmpty(branchName))
         {
             CreateBranch(repoPath, branchName);
         }
@@ -149,8 +155,15 @@ public class GitOperations
         PushChanges(repoPath, branchName);
     }
 
-    public static void CloneGitLabProject(string repoUrl, string clonePath)
+    public static void CloneGitLabProject(string repoUrl, string clonePath, string? pat = null)
     {
+        
+        if (!string.IsNullOrEmpty(pat))
+        {
+            var uri = new Uri(repoUrl);
+            repoUrl = $"{uri.Scheme}://oauth2:{pat}@{uri.Host}{uri.PathAndQuery}";
+        }
+        
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "git",
