@@ -35,4 +35,14 @@ public class FileOperations
             File.Copy(newPath, newPath.Replace(sourcePath, destinationPath), true);
         }
     }
+
+    public static void CreateFileWithContent(string folderPath, string fileName, string content)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+        string filePath = Path.Combine(folderPath, fileName);
+        File.WriteAllText(filePath, content);
+    }
 }

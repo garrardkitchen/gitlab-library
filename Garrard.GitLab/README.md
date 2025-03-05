@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.12
+Install-Package Garrard.GitLab -Version 0.0.13
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.12" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.13" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.12
+dotnet add package Garrard.GitLab --version 0.0.13
 ```
 
 ## Usage
@@ -46,11 +46,20 @@ class Program
             return;
         }
         
-        // will use the new name (will have changed if couldn't use the original name)
-        newProjectName = projectCreation.Value.Name;
+        // `projectCreation.Value.Name` will have changed if couldn't use the original name
+
+        Console.WriteLine($"GitLab project `{projectCreation.Value.Name}` ({projectCreation.Value.HttpUrlToRepo}) created");
         
         GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name", "pat");
         GitOperations.CloneGitLabProject(projectCreation.Value.HttpUrlToRepo, "/path/to/clone", "pat");
+
+        // Create a README.md then push to mainline branch
+
+        FileOperations.CreateFileWithContent("/path/to/download/to", "README.md", $"# {projectCreation.Value.Name}");
+        GitOperations.BranchCommitPushChanges("/path/to/clone", "initial commit", "main");
+
+        // Copy files from the downloaded repository to the new project
+
         FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
         GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name-or-omit-to-use-mainline-branch");
         FileOperations.RemoveTempFolder("/path/to/download/to"); 
@@ -73,6 +82,7 @@ class Program
 - Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
 - Branch (optional), Commit and push changes
 - Remove temporary folder
+- Create a file with contents
 
 ## Contributing
 

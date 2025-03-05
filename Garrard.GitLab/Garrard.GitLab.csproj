@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Garrard.GitLab</PackageId>
-    <Version>0.0.12</Version>
+    <Version>0.0.13</Version>
     <Authors>Garrard Kitchen (garrardkitchen@gmail.com)</Authors>
     <Company>Garrard Kitchen</Company>
     <Description>.NET library that provides operations for working with GitLab projects.</Description>
