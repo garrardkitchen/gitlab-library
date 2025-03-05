@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using CSharpFunctionalExtensions;
 
@@ -38,6 +39,13 @@ public class GitOperations
 
                 break;
             }
+
+            if (checkResponse.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return Result.Failure<(string, string, string, string)>($"{checkResponse.StatusCode.ToString()}. Please check your Personal Access Token.");
+            }
+                
+            return Result.Failure<(string, string, string, string)>($"{checkResponse.StatusCode.ToString()}");
         }
 
         var content = new StringContent(groupId == null ? $"{{ \"name\": \"{newProjectName}\" }}" : $"{{ \"name\": \"{newProjectName}\", \"namespace_id\": \"{groupId}\" }}", System.Text.Encoding.UTF8, "application/json");
