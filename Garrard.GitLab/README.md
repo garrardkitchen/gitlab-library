@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.13
+Install-Package Garrard.GitLab -Version 0.0.14
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.13" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.14" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.13
+dotnet add package Garrard.GitLab --version 0.0.14
 ```
 
 ## Usage
@@ -74,6 +74,7 @@ class Program
   - It will by default add the project to your user's namespace. If you supply a groupID, it will
     add the project to this group instead
   - Returns a tuple of (Id, Name, HttpUrlToRepo and PathWithNamespace)
+  - Will return failure information if failed to access your GitLab account with your PAT
 - Download an existing git repository 
   - You can provide branch name
   - You can provide a PAT (uses oauth2)

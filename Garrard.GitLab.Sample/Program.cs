@@ -64,7 +64,7 @@ class Program
             AnsiConsole.MarkupLine($"[red]{projectCreation.Error}. Exiting...[/]");
             return;
         }
-
+        
         // will use the new name
         
         newProjectName = projectCreation.Value.Name;
