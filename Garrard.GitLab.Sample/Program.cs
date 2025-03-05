@@ -83,10 +83,16 @@ class Program
 
         GitOperations.CloneGitLabProject($"{projectCreation.Value.HttpUrlToRepo}", $"{rootFolder}/{newProjectName}", pat: gitlabPat);
         
-        AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
+        // Create a README.md then push to main
+
+        FileOperations.CreateFileWithContent($"{rootFolder}/{newProjectName}", "README.md", $"# {projectCreation.Value.Name}");
+
+        GitOperations.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", "initial commit", "main");
 
         // Copy files from the downloaded repository to the new project
-        
+
+        AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
+
         FileOperations.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
 
         AnsiConsole.MarkupLine($"[yellow]Commit changes and pushing to [orangered1]gitlab:{newProjectName}[/][/]");
