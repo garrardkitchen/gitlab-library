@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'feat/**'
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   build:
