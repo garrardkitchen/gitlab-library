@@ -42,6 +42,10 @@ This code is a .NET 9.0 console application that performs the following actions:
 
     - Creates a new file with the specified content in the given folder path.
 
+9. Transfer the project
+
+   - Transfers a project to a different group (or namespace)
+
 The code uses the `Spectre.Console` library for prompting user input and displaying messages in the console. It also uses the `HttpClient` class to interact with the GitLab API and the `Process` class to execute git commands.
 
 This repo contains a sample console app that calls upon the GitToolLibrary to perform the appropriate actions.

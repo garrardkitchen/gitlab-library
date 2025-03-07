@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial creation of the changelog file.
 
+## [2025-03-07]
+
+#### Added
+- - Updated version to 0.0.15 and can transfer project to another group or namespace 
+
 ## [2025-03-06]
 
 ### Added
