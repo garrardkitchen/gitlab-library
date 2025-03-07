@@ -107,6 +107,15 @@ class Program
         
         FileOperations.RemoveTempFolder(clonePath);
         
+        // Move project to another group
+
+        var moveProjectToGroup = await GitOperations.TransferProjectToGroupOrNamespace(projectCreation.Value.Id, 1607, gitlabPat, gitlabDomain);
+
+        if (moveProjectToGroup.IsFailure)
+        {
+            AnsiConsole.MarkupLine($"[red]{moveProjectToGroup.Error}[/]");
+        }
+        
         AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
     }
 }

@@ -205,5 +205,24 @@ public class GitOperations
             Console.WriteLine(process.StandardError.ReadToEnd());
         }
     }
+
+    public static async Task<Result> TransferProjectToGroupOrNamespace(string projectId, Int16 newGroupId, string pat, string gitlabDomain)
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
+
+        // var content = new StringContent($"{{ \"namespace\": \"{newGroupId}\" }}", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PutAsync($"https://{gitlabDomain}/api/v4/projects/{projectId}/transfer?namespace={newGroupId}", null); //, content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return Result.Success();
+        }
+        else
+        {
+            var errorResponse = await response.Content.ReadAsStringAsync();
+            return Result.Failure($"Failed to move project: {errorResponse}");
+        }
+    }
 }
 
