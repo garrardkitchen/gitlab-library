@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CSharpFunctionalExtensions;
 
 namespace Garrard.GitLab;
@@ -8,8 +10,14 @@ namespace Garrard.GitLab;
 public class GitLabProjectDto
 {
     public string Id { get; set; }
+    
+    [JsonPropertyName("name")]
     public string Name { get; set; }
+    
+    [JsonPropertyName("http_url_to_repo")]
     public string HttpUrlToRepo { get; set; }
+    
+    [JsonPropertyName("path_with_namespace")]
     public string PathWithNamespace { get; set; }
 }
 
@@ -28,8 +36,10 @@ public class GitOperations
             if (checkResponse.IsSuccessStatusCode)
             {
                 var found = await checkResponse.Content.ReadAsStringAsync();
+             
+                var gitLabProject = JsonSerializer.Deserialize<List<GitLabProjectDto>>(found);
 
-                if (found.Contains(newProjectName))
+                if (gitLabProject != null && gitLabProject.Any(x=>x.Name.Equals(newProjectName, StringComparison.InvariantCultureIgnoreCase)))
                 {
                     onProjectExists(newProjectName);
                     suffix++;
