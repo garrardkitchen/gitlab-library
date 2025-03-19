@@ -72,6 +72,40 @@ class Program
         {
             AnsiConsole.MarkupLine($"[red]{moveProjectToGroup.Error}[/]");
         }
+
+        // Create or update a Group variable
+        
+        var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
+            "1607",              // Group ID
+            "NEW_VAR",           // Variable key
+            "FOO",               // Variable value
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            "env_var",           // Variable type (optional, default: env_var)
+            false,               // Is protected (optional, default: false)
+            true,                // Is masked (optional, default: false) - HTTP API fails if used so ignored for now
+            "*",                 // Environment scope (optional, default: *)
+             Console.WriteLine
+        );
+
+        if (result.IsSuccess)
+        {
+            Console.WriteLine($"Variable created/updated successfully");
+        }
+
+        // get a group variable
+        
+        var variable = await GroupVariablesOperations.GetGroupVariable(
+            "1607",              // Group ID
+            "NEW_VAR",           // Variable key
+            gitlabPat,           // Personal Access Token
+            gitlabDomain         // GitLab domain
+        );
+
+        if (variable.IsSuccess)
+        {
+            Console.WriteLine($"Variable value: {variable.Value.Value}");
+        }
     }
 }
 ```
@@ -94,6 +128,8 @@ class Program
 - Remove temporary folder
 - Create a file with contents
 - Transfer project to a different group (or namespace)
+- Get a Group variable
+- Create or update a Group variable
 
 ## Contributing
 

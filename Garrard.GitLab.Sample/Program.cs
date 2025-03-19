@@ -17,7 +17,42 @@ class Program
         var gitlabPat = configuration["GL_PAT"] ?? throw new ArgumentNullException("GL_PAT", "GitLab PAT is not set in user secrets or environment variables.");
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
-            
+        
+        // Create or update a group variable
+        var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
+            "1607",              // Group ID
+            "NEW_VAR",           // Variable key
+            "FOO",               // Variable value
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            "env_var",           // Variable type (optional, default: env_var)
+            false,               // Is protected (optional, default: false)
+            true,                // Is masked (optional, default: false) - HTTP API fails if used so not included
+            "*",                 // Environment scope (optional, default: *)
+             Console.WriteLine
+        );
+
+        if (result.IsSuccess)
+        {
+            Console.WriteLine($"Variable created/updated successfully");
+        }
+
+        var variable = await GroupVariablesOperations.GetGroupVariable(
+            "1607",              // Group ID
+            "NEW_VAR",           // Variable key
+            gitlabPat,           // Personal Access Token
+            gitlabDomain         // GitLab domain
+        );
+
+        if (variable.IsSuccess)
+        {
+            Console.WriteLine($"Variable value: {variable.Value.Value}");
+        }
+        
+        return;
+
+
+
         // prompt the user for input
         
         AnsiConsole.MarkupLine($"[yellow][bold]Prompt for values:[/][/]");
