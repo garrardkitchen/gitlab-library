@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial creation of the changelog file.
 
+## [2025-03-26]
+
+####
+- Updated version to 0.0.18 and added new feat to look for a placeholder in a file and replace it's value
+
 ## [2025-03-19]
 
 ####
-- Updated version to 0.0.16 and added new feat to get a GitLab Group variable and create/update a Group Variable
+- Updated version to 0.0.17 and added new feat to get a GitLab Group variable and create/update a Group Variable
 
 ## [2025-03-18]
 

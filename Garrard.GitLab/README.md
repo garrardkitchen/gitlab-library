@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.15
+Install-Package Garrard.GitLab -Version 0.0.18
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.15" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.18" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.15
+dotnet add package Garrard.GitLab --version 0.0.18
 ```
 
 ## Usage
@@ -93,7 +93,7 @@ class Program
             Console.WriteLine($"Variable created/updated successfully");
         }
 
-        // get a group variable
+        // Get a group variable
         
         var variable = await GroupVariablesOperations.GetGroupVariable(
             "1607",              // Group ID
@@ -105,6 +105,17 @@ class Program
         if (variable.IsSuccess)
         {
             Console.WriteLine($"Variable value: {variable.Value.Value}");
+        }
+
+        // Search and replace example:
+        
+        FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
+
+        var replacePlaceholderInFile = await FileOperations.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
+
+        if (replacePlaceholderInFile.IsFailure) 
+        {
+            Console.WriteLine(replacePlaceholderInFile.Error);
         }
     }
 }
@@ -130,6 +141,7 @@ class Program
 - Transfer project to a different group (or namespace)
 - Get a Group variable
 - Create or update a Group variable
+- Search for a placeholder in a file and replace its values
 
 ## Contributing
 

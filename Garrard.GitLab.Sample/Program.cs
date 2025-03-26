@@ -18,6 +18,17 @@ class Program
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
         
+        // Search and replace example:
+        
+        FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
+
+        var replacePlaceholderInFile = await FileOperations.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
+
+        if (replacePlaceholderInFile.IsFailure) 
+        {
+            Console.WriteLine(replacePlaceholderInFile.Error);
+        }
+        
         // Create or update a group variable
         var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
             "1607",              // Group ID
@@ -48,10 +59,6 @@ class Program
         {
             Console.WriteLine($"Variable value: {variable.Value.Value}");
         }
-        
-        return;
-
-
 
         // prompt the user for input
         
