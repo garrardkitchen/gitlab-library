@@ -8,7 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial creation of the changelog file.
+
+## [2025-03-27]
+
+- Added new GitLab API features:
+  - Get subgroups beneath a specified group with subgroup detection
+  - Get projects within a group with detailed project information
+  - Get project variables with automatic pagination
+  - Get specific project variable by key and environment
+  - Create or update project variables
+  - Delete project variables
+- Enhanced API methods to automatically handle pagination
+- Added support for sorting and ordering in API methods
+- Added comprehensive documentation for all new features
+- Excludes Groups and Projects marked for deletion
 
 ## [2025-03-26]
 
