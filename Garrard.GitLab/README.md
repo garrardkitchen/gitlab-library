@@ -1,6 +1,6 @@
 # Garrard.GitLab
 
-Garrard.GitLab is a .NET library that provides operations for working with GitLab projects.
+Garrard.GitLab is a .NET library that provides operations for working with GitLab Groups and projects.
 
 ## Installation
 
