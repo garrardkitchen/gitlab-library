@@ -18,6 +18,56 @@ class Program
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
         
+        
+        var subgroups = await GroupOperations.GetSubgroups(
+            "1437",     // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            "name",              // Order by field (optional, default: name)
+            "asc",               // Sort direction (optional, default: asc)
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (subgroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {subgroups.Value.Length} subgroups");
+            
+            foreach (var group in subgroups.Value)
+            {
+                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Path: {group.FullPath}");
+                Console.WriteLine($"  URL: {group.WebUrl}");
+                Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
+            }
+        }
+        
+        // Get all projects in a group
+        var projects = await ProjectOperations.GetProjectsInGroup(
+            "1437",     // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            true,                // Include subgroups (optional, default: true)
+            "name",              // Order by field (optional, default: name)
+            "asc",               // Sort direction (optional, default: asc)
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (projects.IsSuccess)
+        {
+            Console.WriteLine($"Found {projects.Value.Length} projects");
+            
+            foreach (var project in projects.Value)
+            {
+                Console.WriteLine($"Project: {project.Name} (ID: {project.Id})");
+                Console.WriteLine($"  Path: {project.Path}");
+                Console.WriteLine($"  Namespace: {project.Namespace.FullPath}");
+                Console.WriteLine($"  URL: {project.WebUrl}");
+                Console.WriteLine($"  Last activity: {project.LastActivityAt}");
+            }
+        }
+
+        return;
+        
         // Search and replace example:
         
         FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
