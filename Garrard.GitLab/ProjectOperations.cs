@@ -34,11 +34,24 @@ public class GitLabProjectInfoDto
     [JsonPropertyName("namespace")]
     public GitLabNamespaceDto Namespace { get; set; }
     
+    /// <summary>
+    /// Gets the ID of the group that the project belongs to
+    /// </summary>
+    public int GroupId => Namespace?.Id ?? 0;
+    
     [JsonPropertyName("created_at")]
     public DateTime CreatedAt { get; set; }
     
     [JsonPropertyName("last_activity_at")]
     public DateTime LastActivityAt { get; set; }
+    
+    [JsonPropertyName("marked_for_deletion_at")]
+    public string? MarkedForDeletionAt { get; set; }
+    
+    /// <summary>
+    /// Indicates whether the project is marked for deletion
+    /// </summary>
+    public bool IsMarkedForDeletion => !string.IsNullOrEmpty(MarkedForDeletionAt);
 }
 
 /// <summary>
@@ -132,14 +145,22 @@ public class ProjectOperations
                 var groups = JsonSerializer.Deserialize<List<GitLabGroupDto>>(
                     await groupResponse.Content.ReadAsStringAsync());
                 
-                if (groups == null || !groups.Any())
+                if (groups == null || !groups.Any(g => !g.IsMarkedForDeletion))
                 {
-                    return Result.Failure<GitLabProjectInfoDto[]>($"No group found with name: {groupIdOrName}");
+                    return Result.Failure<GitLabProjectInfoDto[]>($"No active group found with name: {groupIdOrName}");
                 }
                 
-                // Use the first match (most relevant)
-                groupId = groups[0].Id.ToString();
-                onMessage?.Invoke($"Resolved group name to ID: {groupId}");
+                // Use the first active match (most relevant)
+                var activeGroup = groups.FirstOrDefault(g => !g.IsMarkedForDeletion);
+                if (activeGroup != null)
+                {
+                    groupId = activeGroup.Id.ToString();
+                    onMessage?.Invoke($"Resolved group name to ID: {groupId}");
+                }
+                else
+                {
+                    return Result.Failure<GitLabProjectInfoDto[]>($"No active group found with name: {groupIdOrName}");
+                }
             }
             
             // Validate orderBy parameter
@@ -182,8 +203,8 @@ public class ProjectOperations
                         return Result.Failure<GitLabProjectInfoDto[]>("Failed to deserialize projects data");
                     }
                     
-                    // Add current page results to our collection
-                    allProjects.AddRange(projects);
+                    // Add current page results to our collection, filtering out projects marked for deletion
+                    allProjects.AddRange(projects.Where(p => !p.IsMarkedForDeletion));
                     
                     // Check if there are more pages
                     if (projects.Count < perPage)
@@ -210,7 +231,7 @@ public class ProjectOperations
                 }
             }
             
-            onMessage?.Invoke($"Retrieved a total of {allProjects.Count} projects from group {groupIdOrName}");
+            onMessage?.Invoke($"Retrieved a total of {allProjects.Count} active projects from group {groupIdOrName}");
             return Result.Success(allProjects.ToArray());
         }
         catch (Exception ex)

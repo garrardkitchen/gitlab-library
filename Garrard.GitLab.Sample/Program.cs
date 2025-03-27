@@ -59,6 +59,7 @@ class Program
             foreach (var project in projects.Value)
             {
                 Console.WriteLine($"Project: {project.Name} (ID: {project.Id})");
+                Console.WriteLine($"  Group ID: {project.GroupId}");
                 Console.WriteLine($"  Path: {project.Path}");
                 Console.WriteLine($"  Namespace: {project.Namespace.FullPath}");
                 Console.WriteLine($"  URL: {project.WebUrl}");

@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.18
+Install-Package Garrard.GitLab -Version 0.0.19
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.18" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.19" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.18
+dotnet add package Garrard.GitLab --version 0.0.19
 ```
 
 ## Usage
@@ -161,6 +161,7 @@ class Program
             foreach (var project in projects.Value)
             {
                 Console.WriteLine($"Project: {project.Name} (ID: {project.Id})");
+                Console.WriteLine($"  Group ID: {project.GroupId}");
                 Console.WriteLine($"  Path: {project.Path}");
                 Console.WriteLine($"  Namespace: {project.Namespace.FullPath}");
                 Console.WriteLine($"  URL: {project.WebUrl}");
@@ -267,12 +268,14 @@ class Program
   - Includes information about whether each subgroup has nested subgroups
   - Automatically retrieves all subgroups across multiple pages
   - Supports ordering and sorting
+  - Excludes any marked for deletion
 - Get all projects within a group
   - Works with both group IDs and names
   - Retrieves detailed project information including namespace data
   - Option to include projects from subgroups
   - Automatically retrieves all projects across multiple pages
   - Supports ordering and sorting
+  - Excludes any marked for deletion
 - Get all project variables
   - Automatically retrieves all variables across multiple pages
 - Get a specific project variable

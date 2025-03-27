@@ -30,6 +30,14 @@ public class GitLabGroupDto
     
     [JsonPropertyName("has_subgroups")]
     public bool HasSubgroups { get; set; }
+    
+    [JsonPropertyName("marked_for_deletion_on")]
+    public string? MarkedForDeletionOn { get; set; }
+    
+    /// <summary>
+    /// Indicates whether the group is marked for deletion
+    /// </summary>
+    public bool IsMarkedForDeletion => !string.IsNullOrEmpty(MarkedForDeletionOn);
 }
 
 /// <summary>
@@ -76,14 +84,22 @@ public class GroupOperations
                 var groups = JsonSerializer.Deserialize<List<GitLabGroupDto>>(
                     await groupResponse.Content.ReadAsStringAsync());
                 
-                if (groups == null || !groups.Any())
+                if (groups == null || !groups.Any(g => !g.IsMarkedForDeletion))
                 {
-                    return Result.Failure<GitLabGroupDto[]>($"No group found with name: {groupIdOrName}");
+                    return Result.Failure<GitLabGroupDto[]>($"No active group found with name: {groupIdOrName}");
                 }
                 
-                // Use the first match (most relevant)
-                groupId = groups[0].Id.ToString();
-                onMessage?.Invoke($"Resolved group name to ID: {groupId}");
+                // Use the first active match (most relevant)
+                var activeGroup = groups.FirstOrDefault(g => !g.IsMarkedForDeletion);
+                if (activeGroup != null)
+                {
+                    groupId = activeGroup.Id.ToString();
+                    onMessage?.Invoke($"Resolved group name to ID: {groupId}");
+                }
+                else
+                {
+                    return Result.Failure<GitLabGroupDto[]>($"No active group found with name: {groupIdOrName}");
+                }
             }
             
             // Validate orderBy parameter
@@ -125,8 +141,8 @@ public class GroupOperations
                         return Result.Failure<GitLabGroupDto[]>("Failed to deserialize subgroups data");
                     }
                     
-                    // Add current page results to our collection
-                    allSubgroups.AddRange(subgroups);
+                    // Add current page results to our collection, filtering out groups marked for deletion
+                    allSubgroups.AddRange(subgroups.Where(g => !g.IsMarkedForDeletion));
                     
                     // Check if there are more pages
                     if (subgroups.Count < perPage)
@@ -154,7 +170,7 @@ public class GroupOperations
             }
             
             // For each subgroup, check if it has subgroups
-            onMessage?.Invoke($"Found {allSubgroups.Count} subgroups, checking for nested subgroups...");
+            onMessage?.Invoke($"Found {allSubgroups.Count} active subgroups, checking for nested subgroups...");
             
             var tasks = allSubgroups.Select(async g => {
                 var hasSubgroupsCheck = await client.GetAsync($"https://{gitlabDomain}/api/v4/groups/{g.Id}/subgroups?per_page=1");
@@ -162,13 +178,14 @@ public class GroupOperations
                 {
                     var checkBody = await hasSubgroupsCheck.Content.ReadAsStringAsync();
                     var checkSubgroups = JsonSerializer.Deserialize<List<GitLabGroupDto>>(checkBody);
-                    g.HasSubgroups = checkSubgroups != null && checkSubgroups.Any();
+                    // Only count active subgroups
+                    g.HasSubgroups = checkSubgroups != null && checkSubgroups.Any(sg => !sg.IsMarkedForDeletion);
                 }
                 return g;
             });
             
             var groupsWithSubgroupInfo = await Task.WhenAll(tasks);
-            onMessage?.Invoke($"Retrieved a total of {groupsWithSubgroupInfo.Length} subgroups");
+            onMessage?.Invoke($"Retrieved a total of {groupsWithSubgroupInfo.Length} active subgroups");
             
             return Result.Success(groupsWithSubgroupInfo);
         }
