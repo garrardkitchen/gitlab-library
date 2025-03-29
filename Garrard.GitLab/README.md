@@ -7,19 +7,19 @@ Garrard.GitLab is a .NET library that provides operations for working with GitLa
 To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
 
 ```powershell
-Install-Package Garrard.GitLab -Version 0.0.19
+Install-Package Garrard.GitLab -Version 0.0.20
 ```
 
 Or add the following package reference to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.19" />
+<PackageReference Include="Garrard.GitLab" Version="0.0.20" />
 ```
 
 Or use the dotnet add command:
 
 ```powershell
-dotnet add package Garrard.GitLab --version 0.0.19
+dotnet add package Garrard.GitLab --version 0.0.20
 ```
 
 ## Usage
@@ -139,6 +139,52 @@ class Program
                 Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
                 Console.WriteLine($"  Path: {group.FullPath}");
                 Console.WriteLine($"  URL: {group.WebUrl}");
+                Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
+            }
+        }
+        
+
+        // Find groups by exact name or ID
+        var findGroups = await GroupOperations.FindGroups(
+            "my-exact-group-name",  // Name or ID to search for
+            gitlabPat,              // Personal Access Token
+            gitlabDomain,           // GitLab domain
+            "name",                 // Order by (optional)
+            "asc",                  // Sort direction (optional)
+            Console.WriteLine       // Optional message handler
+        );
+        
+        if (findGroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {findGroups.Value.Length} groups with exact name match");
+            
+            foreach (var group in findGroups.Value)
+            {
+                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Path: {group.FullPath}");
+                Console.WriteLine($"  Parent ID: {group.ParentId}");
+            }
+        }
+        
+        // Search groups using wildcard pattern
+        var searchGroups = await GroupOperations.SearchGroups(
+            "team-",                // Search pattern
+            gitlabPat,              // Personal Access Token
+            gitlabDomain,           // GitLab domain
+            "path",                 // Order by (optional)
+            "asc",                  // Sort direction (optional)
+            Console.WriteLine       // Optional message handler
+        );
+        
+        if (searchGroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {searchGroups.Value.Length} groups matching the pattern");
+            
+            foreach (var group in searchGroups.Value)
+            {
+                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Path: {group.Path}");
+                Console.WriteLine($"  Full Path: {group.FullPath}");
                 Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
             }
         }
@@ -269,9 +315,18 @@ class Program
   - Automatically retrieves all subgroups across multiple pages
   - Supports ordering and sorting
   - Excludes any marked for deletion
+- Find groups by exact name or ID
+  - Returns exact matches for group name or path
+  - Automatically handles ID-based lookups
+  - Excludes any marked for deletion
+- Search for groups using a wildcard pattern
+  - Find all groups matching a search pattern
+  - Automatically retrieves all matching groups across multiple pages
+  - Supports ordering and sorting
+  - Excludes any marked for deletion
 - Get all projects within a group
   - Works with both group IDs and names
-  - Retrieves detailed project information including namespace data
+  - Retrieves detailed project information including namespace data and group ID
   - Option to include projects from subgroups
   - Automatically retrieves all projects across multiple pages
   - Supports ordering and sorting

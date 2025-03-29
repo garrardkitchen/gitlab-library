@@ -18,6 +18,69 @@ class Program
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
         
+
+         // Example 1: Finding groups by exact name or ID
+        Console.WriteLine("\n--- Example: Finding groups by exact name or ID ---");
+        
+        var findGroups = await GroupOperations.FindGroups(
+            "1436",  // Name or ID to search for
+            gitlabPat,               // Personal Access Token
+            gitlabDomain,            // GitLab domain
+            "name",                  // Order by (optional)
+            "asc",                   // Sort direction (optional)
+            message => Console.WriteLine($"[FindGroups] {message}")  // Optional message handler
+        );
+        
+        if (findGroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {findGroups.Value.Length} groups with exact name match");
+            
+            foreach (var group in findGroups.Value)
+            {
+                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Name: {group.Name}");
+                Console.WriteLine($"  Path: {group.FullPath}");
+                Console.WriteLine($"   Web: {group.WebUrl}");
+                Console.WriteLine($"  Parent ID: {group.ParentId}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Error finding groups: {findGroups.Error}");
+        }
+        
+        // Example 2: Searching groups using wildcard pattern
+        Console.WriteLine("\n--- Example: Searching groups using wildcard pattern ---");
+        
+        var searchGroups = await GroupOperations.SearchGroups(
+            "upe-alz",                 // Search pattern
+            gitlabPat,               // Personal Access Token
+            gitlabDomain,            // GitLab domain
+            "name",                  // Order by (optional)
+            "asc",                   // Sort direction (optional)
+            message => Console.WriteLine($"[SearchGroups] {message}")  // Optional message handler
+        );
+        
+        if (searchGroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {searchGroups.Value.Length} groups matching the pattern");
+            
+            foreach (var group in searchGroups.Value)
+            {
+                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Path: {group.Path}");
+                Console.WriteLine($"  Name: {group.Name}");
+                Console.WriteLine($"  Full Path: {group.FullPath}");
+                Console.WriteLine($"  Web: {group.WebUrl}");
+                Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Error searching groups: {searchGroups.Error}");
+        }
+
+
         
         var subgroups = await GroupOperations.GetSubgroups(
             "1437",     // Group ID or name
@@ -66,13 +129,11 @@ class Program
                 Console.WriteLine($"  Last activity: {project.LastActivityAt}");
             }
         }
-
-        return;
         
         // Search and replace example:
         
         FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
-
+        
         var replacePlaceholderInFile = await FileOperations.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
 
         if (replacePlaceholderInFile.IsFailure) 
@@ -109,6 +170,65 @@ class Program
         if (variable.IsSuccess)
         {
             Console.WriteLine($"Variable value: {variable.Value.Value}");
+        }
+        
+        
+        // Example 3: Getting subgroups
+        Console.WriteLine("\n--- Example: Getting subgroups ---");
+        
+        var getSubgroups = await GroupOperations.GetSubgroups(
+            "parent-group-name",     // Parent group ID or name
+            gitlabPat,               // Personal Access Token
+            gitlabDomain,            // GitLab domain
+            "name",                  // Order by (optional)
+            "asc",                   // Sort direction (optional)
+            message => Console.WriteLine($"[GetSubgroups] {message}")  // Optional message handler
+        );
+        
+        if (getSubgroups.IsSuccess)
+        {
+            Console.WriteLine($"Found {getSubgroups.Value.Length} subgroups");
+            
+            foreach (var group in getSubgroups.Value)
+            {
+                Console.WriteLine($"Subgroup: {group.Name} (ID: {group.Id})");
+                Console.WriteLine($"  Path: {group.FullPath}");
+                Console.WriteLine($"  URL: {group.WebUrl}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Error getting subgroups: {getSubgroups.Error}");
+        }
+        
+        // Example 4: Getting projects in a group
+        Console.WriteLine("\n--- Example: Getting projects in a group ---");
+        
+        var getProjects = await ProjectOperations.GetProjectsInGroup(
+            "group-name",            // Group ID or name
+            gitlabPat,               // Personal Access Token
+            gitlabDomain,            // GitLab domain
+            true,                    // Include subgroups (optional)
+            "name",                  // Order by (optional)
+            "asc",                   // Sort direction (optional)
+            message => Console.WriteLine($"[GetProjects] {message}")  // Optional message handler
+        );
+        
+        if (getProjects.IsSuccess)
+        {
+            Console.WriteLine($"Found {getProjects.Value.Length} projects");
+            
+            foreach (var project in getProjects.Value)
+            {
+                Console.WriteLine($"Project: {project.Name} (ID: {project.Id})");
+                Console.WriteLine($"  Group ID: {project.GroupId}");
+                Console.WriteLine($"  Path: {project.Path}");
+                Console.WriteLine($"  Namespace: {project.Namespace.FullPath}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Error getting projects: {getProjects.Error}");
         }
 
         // prompt the user for input
