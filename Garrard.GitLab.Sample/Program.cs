@@ -79,8 +79,6 @@ class Program
             Console.WriteLine($"Error searching groups: {searchGroups.Error}");
         }
 
-
-        return;
         
         // Search and replace example:
         
