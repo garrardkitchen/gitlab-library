@@ -143,6 +143,7 @@ class Program
             }
         }
         
+
         // Find groups by exact name or ID
         var findGroups = await GroupOperations.FindGroups(
             "my-exact-group-name",  // Name or ID to search for

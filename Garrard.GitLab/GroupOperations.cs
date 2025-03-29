@@ -194,7 +194,7 @@ public class GroupOperations
             return Result.Failure<GitLabGroupDto[]>($"An error occurred: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Finds GitLab groups by name or ID
     /// </summary>
@@ -435,4 +435,5 @@ public class GroupOperations
             return Result.Failure<GitLabGroupDto[]>($"An error occurred: {ex.Message}");
         }
     }
+
 }
