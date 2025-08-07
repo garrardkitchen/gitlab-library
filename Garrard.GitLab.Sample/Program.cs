@@ -230,6 +230,64 @@ class Program
         {
             Console.WriteLine($"Error getting projects: {getProjects.Error}");
         }
+        
+        // NEW: Summary operations example
+        Console.WriteLine("\n--- Example: Getting group summary ---");
+        
+        var groupSummary = await SummaryOperations.GetGroupSummary(
+            "1437",              // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (groupSummary.IsSuccess)
+        {
+            var summary = groupSummary.Value;
+            Console.WriteLine($"Group Summary:");
+            Console.WriteLine($"  Name: {summary.Name}");
+            Console.WriteLine($"  Full Path: {summary.FullPath}");
+            Console.WriteLine($"  Subgroups: {summary.SubgroupCount}");
+            Console.WriteLine($"  Projects: {summary.ProjectCount}");
+            Console.WriteLine($"  Parent ID: {summary.ParentId}");
+            Console.WriteLine($"  Marked for deletion: {summary.IsMarkedForDeletion}");
+        }
+        else
+        {
+            Console.WriteLine($"Error getting group summary: {groupSummary.Error}");
+        }
+        
+        // NEW: Project summaries for a group
+        Console.WriteLine("\n--- Example: Getting project summaries for group ---");
+        
+        var projectSummaries = await SummaryOperations.GetGroupProjectsSummary(
+            "1437",              // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            true,                // Include subgroups
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (projectSummaries.IsSuccess)
+        {
+            Console.WriteLine($"Found {projectSummaries.Value.Length} project summaries:");
+            
+            foreach (var projectSummary in projectSummaries.Value)
+            {
+                Console.WriteLine($"Project: {projectSummary.Name} (ID: {projectSummary.Id})");
+                Console.WriteLine($"  Description: {projectSummary.Description}");
+                Console.WriteLine($"  Group: {projectSummary.GroupName} (ID: {projectSummary.GroupId})");
+                Console.WriteLine($"  Variables: {projectSummary.VariableCount}");
+                Console.WriteLine($"  Created: {projectSummary.CreatedAt:yyyy-MM-dd}");
+                Console.WriteLine($"  Last Activity: {projectSummary.LastActivityAt:yyyy-MM-dd}");
+                Console.WriteLine($"  URL: {projectSummary.WebUrl}");
+                Console.WriteLine();
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Error getting project summaries: {projectSummaries.Error}");
+        }
 
         // prompt the user for input
         
