@@ -527,4 +527,78 @@ public class ProjectOperations
             return Result.Failure($"An error occurred: {ex.Message}");
         }
     }
+    
+    /// <summary>
+    /// Creates a new GitLab project
+    /// </summary>
+    /// <param name="name">The name of the project to create</param>
+    /// <param name="pat">Personal Access Token for GitLab API</param>
+    /// <param name="gitlabDomain">GitLab domain (e.g. gitlab.com)</param>
+    /// <param name="parentGroupId">Optional parent group ID. If provided, the project will be created as a child of this group</param>
+    /// <param name="enableInstanceRunners">Optional boolean to enable or disable instance runners for the project</param>
+    /// <param name="onMessage">Optional action to receive informational messages</param>
+    /// <returns>A Result containing the created project information if successful, or an error message if not</returns>
+    public static async Task<Result<GitLabProjectInfoDto>> CreateGitLabProject(
+        string name, 
+        string pat, 
+        string gitlabDomain,
+        int? parentGroupId = null,
+        bool? enableInstanceRunners = null,
+        Action<string>? onMessage = null)
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
+        
+        try
+        {
+            onMessage?.Invoke($"Creating GitLab project '{name}'...");
+            
+            // Build the JSON payload
+            var payload = new Dictionary<string, object>
+            {
+                { "name", name }
+            };
+            
+            // Add optional parameters if provided
+            if (parentGroupId.HasValue)
+            {
+                payload.Add("namespace_id", parentGroupId.Value);
+                onMessage?.Invoke($"Project will be created in group ID: {parentGroupId.Value}");
+            }
+            
+            if (enableInstanceRunners.HasValue)
+            {
+                payload.Add("shared_runners_enabled", enableInstanceRunners.Value);
+                onMessage?.Invoke($"Instance runners will be {(enableInstanceRunners.Value ? "enabled" : "disabled")}");
+            }
+            
+            var jsonPayload = JsonSerializer.Serialize(payload);
+            var content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
+            
+            var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var project = JsonSerializer.Deserialize<GitLabProjectInfoDto>(responseBody);
+                
+                if (project == null)
+                {
+                    return Result.Failure<GitLabProjectInfoDto>("Failed to deserialize project data");
+                }
+                
+                onMessage?.Invoke($"Successfully created project '{project.Name}' (ID: {project.Id})");
+                return Result.Success(project);
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                return Result.Failure<GitLabProjectInfoDto>($"Failed to create project: {response.StatusCode}. {errorResponse}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<GitLabProjectInfoDto>($"An error occurred: {ex.Message}");
+        }
+    }
 }
