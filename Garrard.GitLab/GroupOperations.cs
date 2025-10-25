@@ -363,7 +363,7 @@ public class GroupOperations
             var fields = new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("name", name),
-                new KeyValuePair<string, string>("path", name.ToLower().Replace(" ", "-")) // GitLab auto-generates path from name
+                new KeyValuePair<string, string>("path", SanitizePathFromName(name))
             };
             
             // Add parent_id if provided
@@ -510,6 +510,37 @@ public class GroupOperations
         {
             return Result.Failure<GitLabGroupDto[]>($"An error occurred: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Sanitizes a group name to create a valid GitLab path
+    /// </summary>
+    /// <param name="name">The group name to sanitize</param>
+    /// <returns>A valid GitLab path</returns>
+    private static string SanitizePathFromName(string name)
+    {
+        // GitLab path requirements:
+        // - Only alphanumeric characters, hyphens, underscores, and dots
+        // - Cannot start/end with special characters
+        // - No consecutive special characters
+        var path = name.ToLower();
+        
+        // Replace spaces and invalid characters with hyphens
+        path = System.Text.RegularExpressions.Regex.Replace(path, @"[^a-z0-9\-_.]", "-");
+        
+        // Replace consecutive special characters with a single hyphen
+        path = System.Text.RegularExpressions.Regex.Replace(path, @"[\-_.]{2,}", "-");
+        
+        // Remove leading/trailing special characters
+        path = path.Trim('-', '_', '.');
+        
+        // If path is empty or invalid, use a default
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = "new-group";
+        }
+        
+        return path;
     }
 
 }
