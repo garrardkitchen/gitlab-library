@@ -284,6 +284,29 @@ class Program
         {
             Console.WriteLine("Variable deleted successfully");
         }
+        
+        // Create a new GitLab project with ProjectOperations.CreateGitLabProject
+        var newProject = await ProjectOperations.CreateGitLabProject(
+            "my-new-project",        // Project name
+            gitlabPat,               // Personal Access Token
+            gitlabDomain,            // GitLab domain
+            1234,                    // Parent group ID (optional, null for user's namespace)
+            true,                    // Enable instance runners (optional, null to use default)
+            Console.WriteLine        // Optional message handler
+        );
+        
+        if (newProject.IsSuccess)
+        {
+            Console.WriteLine($"Project created successfully!");
+            Console.WriteLine($"  ID: {newProject.Value.Id}");
+            Console.WriteLine($"  Name: {newProject.Value.Name}");
+            Console.WriteLine($"  URL: {newProject.Value.WebUrl}");
+            Console.WriteLine($"  HTTP URL: {newProject.Value.HttpUrlToRepo}");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to create project: {newProject.Error}");
+        }
     }
 }
 ```
@@ -341,6 +364,12 @@ class Program
   - Supports environment scope
 - Delete a project variable
   - Supports deletion with specific environment scope
+- Create a new GitLab project (ProjectOperations.CreateGitLabProject)
+  - Create a project with a specified name
+  - Optional: Add the project as a child of a parent group by providing the parent group ID
+  - Optional: Enable or disable instance runners for the project
+  - Returns complete project information including the project ID
+  - Provides informational messages during the creation process
 
 ## Contributing
 
