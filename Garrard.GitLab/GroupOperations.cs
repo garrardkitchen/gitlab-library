@@ -356,7 +356,7 @@ public class GroupOperations
         int? parentId = null,
         Action<string>? onMessage = null)
     {
-        var client = new HttpClient();
+        using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
         
         try
