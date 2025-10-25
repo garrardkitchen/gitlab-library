@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using CSharpFunctionalExtensions;
 
 namespace Garrard.GitLab;
@@ -45,6 +46,12 @@ public class GitLabGroupDto
 /// </summary>
 public class GroupOperations
 {
+    private static readonly Regex InvalidPathCharsRegex = 
+        new Regex(@"[^a-z0-9\-_.]", RegexOptions.Compiled);
+    
+    private static readonly Regex ConsecutiveSpecialCharsRegex = 
+        new Regex(@"[\-_.]{2,}", RegexOptions.Compiled);
+    
     /// <summary>
     /// Gets all GitLab groups beneath a specified group
     /// </summary>
@@ -335,6 +342,74 @@ public class GroupOperations
     }
     
     /// <summary>
+    /// Creates a new GitLab group
+    /// </summary>
+    /// <param name="name">The name of the group to create</param>
+    /// <param name="pat">Personal Access Token for GitLab API</param>
+    /// <param name="gitlabDomain">GitLab domain (e.g. gitlab.com)</param>
+    /// <param name="parentId">Optional parent group ID to create a subgroup</param>
+    /// <param name="onMessage">Optional action to receive informational messages</param>
+    /// <returns>A Result containing the created GitLab group with its ID if successful, or an error message if not</returns>
+    public static async Task<Result<GitLabGroupDto>> CreateGitLabGroup(
+        string name,
+        string pat,
+        string gitlabDomain,
+        int? parentId = null,
+        Action<string>? onMessage = null)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
+        
+        try
+        {
+            onMessage?.Invoke($"Creating GitLab group: {name}...");
+            
+            // Prepare the form data for the POST request
+            var fields = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("name", name),
+                new KeyValuePair<string, string>("path", SanitizePathFromName(name))
+            };
+            
+            // Add parent_id if provided
+            if (parentId.HasValue)
+            {
+                fields.Add(new KeyValuePair<string, string>("parent_id", parentId.Value.ToString()));
+                onMessage?.Invoke($"Setting parent group ID to: {parentId.Value}");
+            }
+            
+            var content = new FormUrlEncodedContent(fields);
+            var url = $"https://{gitlabDomain}/api/v4/groups";
+            
+            var response = await client.PostAsync(url, content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var group = JsonSerializer.Deserialize<GitLabGroupDto>(responseBody, options);
+                
+                if (group == null)
+                {
+                    return Result.Failure<GitLabGroupDto>("Failed to deserialize group data");
+                }
+                
+                onMessage?.Invoke($"Successfully created group '{name}' with ID: {group.Id}");
+                return Result.Success(group);
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                return Result.Failure<GitLabGroupDto>($"Failed to create group: {response.StatusCode}. {errorResponse}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<GitLabGroupDto>($"An error occurred: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
     /// Searches for GitLab groups using a wildcard pattern
     /// </summary>
     /// <param name="searchPattern">The search pattern to match groups (supports partial matches)</param>
@@ -434,6 +509,37 @@ public class GroupOperations
         {
             return Result.Failure<GitLabGroupDto[]>($"An error occurred: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Sanitizes a group name to create a valid GitLab path
+    /// </summary>
+    /// <param name="name">The group name to sanitize</param>
+    /// <returns>A valid GitLab path</returns>
+    private static string SanitizePathFromName(string name)
+    {
+        // GitLab path requirements:
+        // - Only alphanumeric characters, hyphens, underscores, and dots
+        // - Cannot start/end with special characters
+        // - No consecutive special characters
+        var path = name.ToLower();
+        
+        // Replace all characters that are NOT alphanumeric, hyphens, underscores, or dots with hyphens
+        path = InvalidPathCharsRegex.Replace(path, "-");
+        
+        // Replace consecutive special characters with a single hyphen
+        path = ConsecutiveSpecialCharsRegex.Replace(path, "-");
+        
+        // Remove leading/trailing special characters
+        path = path.Trim('-', '_', '.');
+        
+        // If path is empty or invalid, use a default
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = "new-group";
+        }
+        
+        return path;
     }
 
 }
