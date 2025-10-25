@@ -45,6 +45,12 @@ public class GitLabGroupDto
 /// </summary>
 public class GroupOperations
 {
+    private static readonly System.Text.RegularExpressions.Regex InvalidPathCharsRegex = 
+        new System.Text.RegularExpressions.Regex(@"[^a-z0-9\-_.]", System.Text.RegularExpressions.RegexOptions.Compiled);
+    
+    private static readonly System.Text.RegularExpressions.Regex ConsecutiveSpecialCharsRegex = 
+        new System.Text.RegularExpressions.Regex(@"[\-_.]{2,}", System.Text.RegularExpressions.RegexOptions.Compiled);
+    
     /// <summary>
     /// Gets all GitLab groups beneath a specified group
     /// </summary>
@@ -376,7 +382,7 @@ public class GroupOperations
             // Add shared_runners_enabled if provided
             if (enableSharedRunnersForGroup.HasValue)
             {
-                fields.Add(new KeyValuePair<string, string>("shared_runners_enabled", enableSharedRunnersForGroup.Value.ToString().ToLower()));
+                fields.Add(new KeyValuePair<string, string>("shared_runners_enabled", enableSharedRunnersForGroup.Value ? "true" : "false"));
                 onMessage?.Invoke($"Setting shared runners enabled to: {enableSharedRunnersForGroup.Value}");
             }
             
@@ -388,7 +394,8 @@ public class GroupOperations
             if (response.IsSuccessStatusCode)
             {
                 var responseBody = await response.Content.ReadAsStringAsync();
-                var group = JsonSerializer.Deserialize<GitLabGroupDto>(responseBody);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var group = JsonSerializer.Deserialize<GitLabGroupDto>(responseBody, options);
                 
                 if (group == null)
                 {
@@ -526,10 +533,10 @@ public class GroupOperations
         var path = name.ToLower();
         
         // Replace spaces and invalid characters with hyphens
-        path = System.Text.RegularExpressions.Regex.Replace(path, @"[^a-z0-9\-_.]", "-");
+        path = InvalidPathCharsRegex.Replace(path, "-");
         
         // Replace consecutive special characters with a single hyphen
-        path = System.Text.RegularExpressions.Regex.Replace(path, @"[\-_.]{2,}", "-");
+        path = ConsecutiveSpecialCharsRegex.Replace(path, "-");
         
         // Remove leading/trailing special characters
         path = path.Trim('-', '_', '.');
