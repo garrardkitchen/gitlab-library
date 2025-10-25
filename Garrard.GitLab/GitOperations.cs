@@ -21,6 +21,19 @@ public class GitLabProjectDto
     public string PathWithNamespace { get; set; }
 }
 
+public class CreateGitLabProjectRequest
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+    
+    [JsonPropertyName("namespace_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? NamespaceId { get; set; }
+    
+    [JsonPropertyName("shared_runners_enabled")]
+    public bool SharedRunnersEnabled { get; set; }
+}
+
 public class GitOperations
 {
     public static async Task<Result<(string Id, string Name, string HttpUrlToRepo, string PathWithNamespace)>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null, bool sharedRunnersEnabled = false)
@@ -58,7 +71,14 @@ public class GitOperations
             return Result.Failure<(string, string, string, string)>($"{checkResponse.StatusCode.ToString()}");
         }
 
-        var content = new StringContent(groupId == null ? $"{{ \"name\": \"{newProjectName}\", \"shared_runners_enabled\": {sharedRunnersEnabled.ToString().ToLower()} }}" : $"{{ \"name\": \"{newProjectName}\", \"namespace_id\": \"{groupId}\", \"shared_runners_enabled\": {sharedRunnersEnabled.ToString().ToLower()} }}", System.Text.Encoding.UTF8, "application/json");
+        var requestPayload = new CreateGitLabProjectRequest
+        {
+            Name = newProjectName,
+            NamespaceId = groupId,
+            SharedRunnersEnabled = sharedRunnersEnabled
+        };
+        var jsonPayload = JsonSerializer.Serialize(requestPayload);
+        var content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
         var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
 
         if (response.IsSuccessStatusCode)
