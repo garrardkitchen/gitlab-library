@@ -23,7 +23,7 @@ public class GitLabProjectDto
 
 public class GitOperations
 {
-    public static async Task<Result<(string Id, string Name, string HttpUrlToRepo, string PathWithNamespace)>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null)
+    public static async Task<Result<(string Id, string Name, string HttpUrlToRepo, string PathWithNamespace)>> CreateGitLabProject(string projectName, string pat, string gitlabDomain, Action<string> onProjectExists, string? groupId = null, bool sharedRunnersEnabled = false)
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
@@ -58,7 +58,7 @@ public class GitOperations
             return Result.Failure<(string, string, string, string)>($"{checkResponse.StatusCode.ToString()}");
         }
 
-        var content = new StringContent(groupId == null ? $"{{ \"name\": \"{newProjectName}\" }}" : $"{{ \"name\": \"{newProjectName}\", \"namespace_id\": \"{groupId}\" }}", System.Text.Encoding.UTF8, "application/json");
+        var content = new StringContent(groupId == null ? $"{{ \"name\": \"{newProjectName}\", \"shared_runners_enabled\": {sharedRunnersEnabled.ToString().ToLower()} }}" : $"{{ \"name\": \"{newProjectName}\", \"namespace_id\": \"{groupId}\", \"shared_runners_enabled\": {sharedRunnersEnabled.ToString().ToLower()} }}", System.Text.Encoding.UTF8, "application/json");
         var response = await client.PostAsync($"https://{gitlabDomain}/api/v4/projects", content);
 
         if (response.IsSuccessStatusCode)
