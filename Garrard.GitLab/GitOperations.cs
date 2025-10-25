@@ -24,7 +24,7 @@ public class GitLabProjectDto
 public class CreateGitLabProjectRequest
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public string? Name { get; set; }
     
     [JsonPropertyName("namespace_id")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
