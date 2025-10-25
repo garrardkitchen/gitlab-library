@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using CSharpFunctionalExtensions;
 
 namespace Garrard.GitLab;
@@ -45,11 +46,11 @@ public class GitLabGroupDto
 /// </summary>
 public class GroupOperations
 {
-    private static readonly System.Text.RegularExpressions.Regex InvalidPathCharsRegex = 
-        new System.Text.RegularExpressions.Regex(@"[^a-z0-9\-_.]", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly Regex InvalidPathCharsRegex = 
+        new Regex(@"[^a-z0-9\-_.]", RegexOptions.Compiled);
     
-    private static readonly System.Text.RegularExpressions.Regex ConsecutiveSpecialCharsRegex = 
-        new System.Text.RegularExpressions.Regex(@"[\-_.]{2,}", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly Regex ConsecutiveSpecialCharsRegex = 
+        new Regex(@"[\-_.]{2,}", RegexOptions.Compiled);
     
     /// <summary>
     /// Gets all GitLab groups beneath a specified group
@@ -523,7 +524,7 @@ public class GroupOperations
         // - No consecutive special characters
         var path = name.ToLower();
         
-        // Replace spaces and invalid characters with hyphens
+        // Replace all characters that are NOT alphanumeric, hyphens, underscores, or dots with hyphens
         path = InvalidPathCharsRegex.Replace(path, "-");
         
         // Replace consecutive special characters with a single hyphen

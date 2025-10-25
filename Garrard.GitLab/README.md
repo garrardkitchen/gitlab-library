@@ -189,6 +189,38 @@ class Program
             }
         }
         
+        // Create a new GitLab group
+        var createGroup = await GroupOperations.CreateGitLabGroup(
+            "My New Team",          // Group name
+            gitlabPat,              // Personal Access Token
+            gitlabDomain,           // GitLab domain
+            onMessage: Console.WriteLine  // Optional message handler
+        );
+        
+        if (createGroup.IsSuccess)
+        {
+            Console.WriteLine($"Created group '{createGroup.Value.Name}' with ID: {createGroup.Value.Id}");
+            Console.WriteLine($"  Path: {createGroup.Value.Path}");
+            Console.WriteLine($"  Full Path: {createGroup.Value.FullPath}");
+            Console.WriteLine($"  URL: {createGroup.Value.WebUrl}");
+        }
+        
+        // Create a subgroup under a parent group
+        var createSubgroup = await GroupOperations.CreateGitLabGroup(
+            "Backend Team",         // Subgroup name
+            gitlabPat,              // Personal Access Token
+            gitlabDomain,           // GitLab domain
+            parentId: createGroup.Value.Id,  // Parent group ID
+            onMessage: Console.WriteLine     // Optional message handler
+        );
+        
+        if (createSubgroup.IsSuccess)
+        {
+            Console.WriteLine($"Created subgroup '{createSubgroup.Value.Name}' with ID: {createSubgroup.Value.Id}");
+            Console.WriteLine($"  Parent ID: {createSubgroup.Value.ParentId}");
+            Console.WriteLine($"  Full Path: {createSubgroup.Value.FullPath}");
+        }
+        
         // Get all projects in a group
         var projects = await ProjectOperations.GetProjectsInGroup(
             "my-group-name",     // Group ID or name
@@ -324,6 +356,12 @@ class Program
   - Automatically retrieves all matching groups across multiple pages
   - Supports ordering and sorting
   - Excludes any marked for deletion
+- Create a new GitLab group
+  - Create top-level groups or subgroups
+  - Automatically generates valid GitLab paths from group names
+  - Optional parent group ID to create nested subgroups
+  - Returns the created group with its ID and metadata
+  - Proper resource cleanup with using statement
 - Get all projects within a group
   - Works with both group IDs and names
   - Retrieves detailed project information including namespace data and group ID
