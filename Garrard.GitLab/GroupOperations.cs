@@ -335,6 +335,82 @@ public class GroupOperations
     }
     
     /// <summary>
+    /// Creates a new GitLab group
+    /// </summary>
+    /// <param name="name">The name of the group to create</param>
+    /// <param name="pat">Personal Access Token for GitLab API</param>
+    /// <param name="gitlabDomain">GitLab domain (e.g. gitlab.com)</param>
+    /// <param name="parentId">Optional parent group ID to create a subgroup</param>
+    /// <param name="enableSharedRunnersForGroup">Optional flag to enable or disable shared runners for the group (defaults to true)</param>
+    /// <param name="onMessage">Optional action to receive informational messages</param>
+    /// <returns>A Result containing the created GitLab group with its ID if successful, or an error message if not</returns>
+    public static async Task<Result<GitLabGroupDto>> CreateGitLabGroup(
+        string name,
+        string pat,
+        string gitlabDomain,
+        int? parentId = null,
+        bool? enableSharedRunnersForGroup = null,
+        Action<string>? onMessage = null)
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
+        
+        try
+        {
+            onMessage?.Invoke($"Creating GitLab group: {name}...");
+            
+            // Prepare the form data for the POST request
+            var fields = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("name", name),
+                new KeyValuePair<string, string>("path", name.ToLower().Replace(" ", "-")) // GitLab auto-generates path from name
+            };
+            
+            // Add parent_id if provided
+            if (parentId.HasValue)
+            {
+                fields.Add(new KeyValuePair<string, string>("parent_id", parentId.Value.ToString()));
+                onMessage?.Invoke($"Setting parent group ID to: {parentId.Value}");
+            }
+            
+            // Add shared_runners_enabled if provided
+            if (enableSharedRunnersForGroup.HasValue)
+            {
+                fields.Add(new KeyValuePair<string, string>("shared_runners_enabled", enableSharedRunnersForGroup.Value.ToString().ToLower()));
+                onMessage?.Invoke($"Setting shared runners enabled to: {enableSharedRunnersForGroup.Value}");
+            }
+            
+            var content = new FormUrlEncodedContent(fields);
+            var url = $"https://{gitlabDomain}/api/v4/groups";
+            
+            var response = await client.PostAsync(url, content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var group = JsonSerializer.Deserialize<GitLabGroupDto>(responseBody);
+                
+                if (group == null)
+                {
+                    return Result.Failure<GitLabGroupDto>("Failed to deserialize group data");
+                }
+                
+                onMessage?.Invoke($"Successfully created group '{name}' with ID: {group.Id}");
+                return Result.Success(group);
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                return Result.Failure<GitLabGroupDto>($"Failed to create group: {response.StatusCode}. {errorResponse}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<GitLabGroupDto>($"An error occurred: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
     /// Searches for GitLab groups using a wildcard pattern
     /// </summary>
     /// <param name="searchPattern">The search pattern to match groups (supports partial matches)</param>
