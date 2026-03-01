@@ -37,7 +37,7 @@ jobs:
         run: dotnet build src/Garrard.GitLab/Garrard.GitLab.csproj --configuration Release --no-restore
 
       - name: Run tests (gate before publish)
-        run: dotnet test --configuration Release --no-build
+        run: dotnet test --configuration Release --no-restore
 
       - name: Pack
         run: dotnet pack src/Garrard.GitLab/Garrard.GitLab.csproj --configuration Release --no-build

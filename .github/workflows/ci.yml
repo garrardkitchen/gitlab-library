@@ -53,7 +53,7 @@ jobs:
 
       - name: Test with coverage
         run: |
-          dotnet test --configuration Release --no-build \
+          dotnet test --configuration Release --no-restore \
             --collect:"XPlat Code Coverage" \
             --results-directory ./coverage \
             --logger "trx;LogFileName=test-results.trx" \
