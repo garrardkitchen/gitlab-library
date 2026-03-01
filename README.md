@@ -1,6 +1,6 @@
 # gitlab-library
 
-This code is a .NET 9.0 console application that performs the following actions:
+This code is a .NET 10.0 console application that performs the following actions:
 
 1. Prompt the user for input:
 
