@@ -29,30 +29,44 @@ tests/
 
 ### Installation
 
-```powershell
+```bash
 dotnet add package Garrard.GitLab
 ```
 
-### Usage (static API)
+### Usage
 
 ```csharp
-using Garrard.GitLab;
+using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.Enums;
 
-// Create a GitLab project
-var result = await ProjectOperations.CreateGitLabProject("MyProject", pat, "gitlab.com", groupId);
+// Register once at startup
+services.AddGarrardGitLab(opts =>
+{
+    opts.Pat    = "glpat-xxxx";   // required
+    opts.Domain = "gitlab.com";   // optional, defaults to gitlab.com
+});
 
-// Get all projects in a group
-var projects = await ProjectOperations.GetProjectsInGroup(groupId, pat, "gitlab.com");
+// Inject and use
+public class MyService(ProjectClient projectClient, GroupClient groupClient)
+{
+    public async Task Run()
+    {
+        // Find a group
+        var groups = await groupClient.FindGroups("my-team");
 
-// Clone a repository
-var cloneResult = GitOperations.CloneGitLabProject("https://gitlab.com/...", "/local/path", pat);
+        // Create a project access token
+        var token = await projectClient.CreateProjectAccessToken(
+            "99",
+            scopes: ProjectAccessTokenScope.WriteRepository | ProjectAccessTokenScope.ReadApi,
+            accessLevel: AccessLevel.Maintainer);
+
+        // Create a hidden project variable (value concealed after creation)
+        await projectClient.CreateOrUpdateProjectVariable("99", "API_KEY", "secret");
+    }
+}
 ```
 
-### Dependency Injection
-
-```csharp
-services.AddGarrardGitLab();
-```
+See [`src/Garrard.GitLab/README.md`](src/Garrard.GitLab/README.md) for full API documentation.
 
 ---
 
@@ -112,9 +126,10 @@ MCP_TRANSPORT=http MCP_API_KEY=my-secret GL_PAT=glpat-xxxx GL_DOMAIN=gitlab.com 
 | Projects | `gitlab_get_projects_in_group` | List projects in a group |
 | Projects | `gitlab_get_project_variables` | Get all variables for a project |
 | Projects | `gitlab_get_project_variable` | Get a specific project variable |
-| Projects | `gitlab_create_or_update_project_variable` | Create or update a project variable |
+| Projects | `gitlab_create_or_update_project_variable` | Create or update a project variable (hidden by default) |
 | Projects | `gitlab_delete_project_variable` | Delete a project variable |
 | Projects | `gitlab_create_project` | Create a new GitLab project |
+| Projects | `gitlab_create_project_access_token` | Create a project access token with configurable scopes and access level |
 | Group Variables | `gitlab_get_group_variable` | Get a specific group variable |
 | Group Variables | `gitlab_create_or_update_group_variable` | Create or update a group variable |
 | Summary | `gitlab_get_group_summary` | Get summary stats for a group |
@@ -144,10 +159,10 @@ No additional auth — security comes from the process boundary. Suitable for lo
 - Configure `MCP_API_KEY` as a secret — never commit it to source control.
 
 ### GitLab PAT
-- Default PAT is read from `GL_PAT` environment variable.
-- Each tool accepts optional `pat` and `gitlabDomain` parameters to override the default per-request.
+- PAT is configured once via `GitLabOptions.Pat` (from `GitLab__Pat` env var or `appsettings.json`).
+- The PAT is injected into `HttpClient` at startup — no PAT is ever passed into method signatures.
 - PAT values are never logged.
-- Use a PAT with minimum required scopes (`api`, `read_api`).
+- Use a PAT with minimum required scopes for your use case.
 
 ---
 

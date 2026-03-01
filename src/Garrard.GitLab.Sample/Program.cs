@@ -1,5 +1,7 @@
 ﻿using Garrard.GitLab.Library;
 using Garrard.GitLab.Library.DTOs;
+using Garrard.GitLab.Library.Enums;
+using Garrard.GitLab.Library.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
@@ -150,6 +152,43 @@ class Program
             Console.WriteLine(replacePlaceholderInFile.Error);
         }
         
+        // Create or update a project variable (hidden by default)
+        var createVarResult = await projectClient.CreateOrUpdateProjectVariable(
+            "99",                // Project ID
+            "API_KEY",           // Variable key
+            "my-secret-value",   // Variable value
+            isHidden: true       // Hide value after creation (default: true)
+        );
+
+        if (createVarResult.IsSuccess)
+            Console.WriteLine($"Variable '{createVarResult.Value.Key}' created/updated");
+
+        // Create a project access token
+        Console.WriteLine("\n--- Example: Creating a project access token ---");
+
+        var tokenResult = await projectClient.CreateProjectAccessToken(
+            "99",                                           // Project ID
+            name:        "GL_TOKEN",                        // default
+            scopes:      ProjectAccessTokenScope.WriteRepository | ProjectAccessTokenScope.ReadApi,
+            accessLevel: AccessLevel.Maintainer,            // 40
+            expiresAt:   null,                              // defaults to +1 year
+            onMessage:   Console.WriteLine
+        );
+
+        if (tokenResult.IsSuccess)
+        {
+            Console.WriteLine($"Token name:     {tokenResult.Value.Name}");
+            Console.WriteLine($"Token value:    {tokenResult.Value.Token}");  // only visible on creation
+            Console.WriteLine($"Access level:   {tokenResult.Value.AccessLevel}");
+            Console.WriteLine($"Expires:        {tokenResult.Value.ExpiresAt}");
+            Console.WriteLine($"Scopes:         {string.Join(", ", tokenResult.Value.Scopes)}");
+            Console.WriteLine($"Active:         {tokenResult.Value.Active}");
+        }
+        else
+        {
+            Console.WriteLine($"Error creating token: {tokenResult.Error}");
+        }
+
         // Create or update a group variable
         var result = await groupVarClient.CreateOrUpdateGroupVariable(
             "1607",              // Group ID
@@ -385,5 +424,52 @@ class Program
         }
         
         AnsiConsole.MarkupLine($"[green][bold]Workflow completed successfully![/][/]");
+        
+        // Example: Create a project variable with hidden=true (value concealed after creation)
+        Console.WriteLine("\n--- Example: Create a hidden project variable ---");
+
+        var hiddenVarResult = await projectClient.CreateOrUpdateProjectVariable(
+            projectCreation.Value.Id.ToString(),
+            "GL_TOKEN_VALUE",
+            "super-secret",
+            variableType:     "env_var",
+            isProtected:      false,
+            isMasked:         true,
+            environmentScope: "*",
+            isHidden:         true,  // default — conceals value after creation
+            onMessage:        Console.WriteLine
+        );
+
+        if (hiddenVarResult.IsSuccess)
+            Console.WriteLine($"Variable '{hiddenVarResult.Value.Key}' created (hidden: {hiddenVarResult.Value.Hidden})");
+        else
+            Console.WriteLine($"Error: {hiddenVarResult.Error}");
+
+        // Example: Create a project access token
+        Console.WriteLine("\n--- Example: Create a project access token ---");
+
+        var accessTokenResult = await projectClient.CreateProjectAccessToken(
+            projectCreation.Value.Id.ToString(),
+            name:        "GL_TOKEN",
+            scopes:      ProjectAccessTokenScope.WriteRepository | ProjectAccessTokenScope.ReadApi,
+            accessLevel: AccessLevel.Maintainer,
+            expiresAt:   DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)),
+            onMessage:   Console.WriteLine
+        );
+
+        if (accessTokenResult.IsSuccess)
+        {
+            var t = accessTokenResult.Value;
+            Console.WriteLine($"Token created: {t.Name} (ID: {t.Id})");
+            Console.WriteLine($"  Token value : {t.Token}");   // only available at creation time
+            Console.WriteLine($"  Scopes      : {string.Join(", ", t.Scopes)}");
+            Console.WriteLine($"  Access level: {t.AccessLevel}");
+            Console.WriteLine($"  Expires     : {t.ExpiresAt}");
+            Console.WriteLine($"  Active      : {t.Active}");
+        }
+        else
+        {
+            Console.WriteLine($"Error creating access token: {accessTokenResult.Error}");
+        }
     }
 }

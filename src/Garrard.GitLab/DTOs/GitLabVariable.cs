@@ -22,6 +22,9 @@ public class GitLabVariable
     [JsonPropertyName("masked")]
     public bool Masked { get; init; }
 
+    [JsonPropertyName("hidden")]
+    public bool Hidden { get; init; }
+
     [JsonPropertyName("environment_scope")]
     public string EnvironmentScope { get; init; } = string.Empty;
 }
