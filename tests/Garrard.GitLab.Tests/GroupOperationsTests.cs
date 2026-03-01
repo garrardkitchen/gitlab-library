@@ -1,38 +1,26 @@
 using System.Net;
 using System.Text.Json;
-using Garrard.GitLab.Http;
+using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.Http;
+using Microsoft.Extensions.Options;
 using Moq;
-using Moq.Protected;
 
 namespace Garrard.GitLab.Tests;
 
 /// <summary>
-/// Unit tests for <see cref="GroupOperations"/> using a mocked <see cref="IGitLabHttpClientFactory"/>.
+/// Unit tests for <see cref="GroupClient"/> using a mocked <see cref="IGitLabHttpClientFactory"/>.
 /// </summary>
 public class GroupOperationsTests
 {
     private const string Domain = "gitlab.example.com";
     private const string Pat = "test-pat-token";
+    private const string InvalidDomain = "not-a-real-domain.invalid";
 
-    private static IGitLabHttpClientFactory MockFactory(string responseJson, HttpStatusCode statusCode = HttpStatusCode.OK)
-    {
-        var handler = new Mock<HttpMessageHandler>(MockBehavior.Loose);
-        handler.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = statusCode,
-                Content = new StringContent(responseJson, System.Text.Encoding.UTF8, "application/json")
-            });
+    private static GroupClient CreateClient(Mock<IGitLabHttpClientFactory> factory, string domain = Domain) =>
+        new GroupClient(factory.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = domain }));
 
-        var factoryMock = new Mock<IGitLabHttpClientFactory>();
-        factoryMock.Setup(f => f.CreateClient())
-                   .Returns(new HttpClient(handler.Object));
-        return factoryMock.Object;
-    }
+    private static GroupClient CreateInvalidDomainClient() =>
+        CreateClient(HttpTestHelpers.CreateRealClientFactory(), InvalidDomain);
 
     [Fact]
     public async Task FindGroups_ById_ReturnsGroup()
@@ -49,41 +37,43 @@ public class GroupOperationsTests
             marked_for_deletion_on = (string?)null
         });
 
-        var result = await GroupOperations.FindGroups("42", Pat, Domain);
+        var factory = HttpTestHelpers.CreateMockFactory(HttpStatusCode.OK, groupJson);
+        var client = CreateClient(factory);
 
-        // The real static method creates its own HttpClient internally;
-        // this test documents expected behaviour via the Result API.
-        // Integration behaviour is verified via the real GitLab API in integration tests.
-        Assert.NotNull(result);
+        var result = await client.FindGroups("42");
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value);
+        Assert.Equal(42, result.Value[0].Id);
     }
 
     [Fact]
     public async Task FindGroups_EmptyNameOrId_Returns()
     {
         // Passing an empty string should not throw – the Result will capture the error.
-        var result = await Record.ExceptionAsync(() => GroupOperations.FindGroups("", Pat, Domain));
-        Assert.Null(result); // No unhandled exception
+        var client = CreateInvalidDomainClient();
+        var exception = await Record.ExceptionAsync(() => client.FindGroups(""));
+        Assert.Null(exception); // No unhandled exception
     }
 
     [Fact]
     public async Task SearchGroups_InvalidDomain_ReturnsFailure()
     {
-        // Using an unreachable domain ensures an exception is caught and returned as Result.Failure.
-        var result = await GroupOperations.SearchGroups("test", Pat, "not-a-real-domain.invalid");
+        var result = await CreateInvalidDomainClient().SearchGroups("test");
         Assert.True(result.IsFailure);
     }
 
     [Fact]
     public async Task GetSubgroups_InvalidDomain_ReturnsFailure()
     {
-        var result = await GroupOperations.GetSubgroups("123", Pat, "not-a-real-domain.invalid");
+        var result = await CreateInvalidDomainClient().GetSubgroups("123");
         Assert.True(result.IsFailure);
     }
 
     [Fact]
     public async Task CreateGitLabGroup_InvalidDomain_ReturnsFailure()
     {
-        var result = await GroupOperations.CreateGitLabGroup("new-group", Pat, "not-a-real-domain.invalid");
+        var result = await CreateInvalidDomainClient().CreateGitLabGroup("new-group");
         Assert.True(result.IsFailure);
     }
 }

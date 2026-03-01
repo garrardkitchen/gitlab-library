@@ -1,9 +1,9 @@
 using System.Net.Http.Headers;
-using Garrard.GitLab.Http;
+using Garrard.GitLab.Library.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Garrard.GitLab;
+namespace Garrard.GitLab.Library;
 
 /// <summary>
 /// Extension methods for registering Garrard.GitLab services with the DI container.
@@ -12,15 +12,9 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the Garrard.GitLab services, including a connection-pooled named
-    /// <see cref="HttpClient"/> pre-configured with Bearer auth from <see cref="GitLabOptions"/>.
+    /// <see cref="HttpClient"/> pre-configured with Bearer auth from <see cref="GitLabOptions"/>,
+    /// and all client classes as singletons.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configureOptions">
-    /// Optional delegate to configure <see cref="GitLabOptions"/> directly (e.g. in tests or
-    /// simple console apps). When omitted, options are expected to come from the host
-    /// configuration (bind the <c>GitLab</c> section or set <c>GitLab__Pat</c> /
-    /// <c>GitLab__Domain</c> environment variables).
-    /// </param>
     public static IServiceCollection AddGarrardGitLab(
         this IServiceCollection services,
         Action<GitLabOptions>? configureOptions = null)
@@ -38,6 +32,15 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddSingleton<IGitLabHttpClientFactory, DefaultGitLabHttpClientFactory>();
+
+        // Register instance client classes
+        services.AddSingleton<GroupClient>();
+        services.AddSingleton<ProjectClient>();
+        services.AddSingleton<GroupVariableClient>();
+        services.AddSingleton<GitClient>();
+        services.AddSingleton<FileClient>();
+        services.AddSingleton<SummaryClient>();
+
         return services;
     }
 }

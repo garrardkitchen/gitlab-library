@@ -1,12 +1,13 @@
 using System.Net.Http.Headers;
-using Garrard.GitLab.Http;
+using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace Garrard.GitLab.Tests;
 
 /// <summary>
-/// Unit tests for the DI helper types in <see cref="Garrard.GitLab.Http"/>.
+/// Unit tests for the DI helper types in <see cref="Garrard.GitLab.Library.Http"/>.
 /// </summary>
 public class HttpClientFactoryTests
 {
@@ -74,5 +75,71 @@ public class HttpClientFactoryTests
         var factory = provider.GetRequiredService<IGitLabHttpClientFactory>();
 
         Assert.IsType<DefaultGitLabHttpClientFactory>(factory);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersGroupClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<GroupClient>();
+        Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersProjectClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<ProjectClient>();
+        Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersGroupVariableClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<GroupVariableClient>();
+        Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersGitClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<GitClient>();
+        Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersFileClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<FileClient>();
+        Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_RegistersSummaryClient()
+    {
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts => { opts.Pat = "test"; opts.Domain = "gitlab.com"; });
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredService<SummaryClient>();
+        Assert.NotNull(client);
     }
 }

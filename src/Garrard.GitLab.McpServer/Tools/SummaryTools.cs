@@ -1,44 +1,35 @@
 using System.ComponentModel;
-using Garrard.GitLab;
-using Microsoft.Extensions.Options;
+using Garrard.GitLab.Library;
 using ModelContextProtocol.Server;
 
 namespace Garrard.GitLab.McpServer.Tools;
 
-/// <summary>MCP tools that wrap <see cref="SummaryOperations"/>.</summary>
+/// <summary>MCP tools that wrap <see cref="SummaryClient"/>.</summary>
 [McpServerToolType]
-public sealed class SummaryTools(IOptions<GitLabOptions> options)
+public sealed class SummaryTools(SummaryClient summaryClient)
 {
-    private readonly GitLabOptions _opts = options.Value;
-
     [McpServerTool(Name = "gitlab_get_group_summary"), Description("Gets a summary of a GitLab group including subgroup and project counts.")]
     public async Task<string> GetGroupSummary(
-        [Description("The ID or name of the group.")] string groupIdOrName,
-        [Description("Override GitLab domain. Falls back to configured default.")] string? gitlabDomain = null,
-        [Description("Override GitLab PAT. Falls back to configured default.")] string? pat = null)
+        [Description("The ID or name of the group.")] string groupIdOrName)
     {
-        var result = await SummaryOperations.GetGroupSummary(groupIdOrName, pat ?? _opts.Pat, gitlabDomain ?? _opts.Domain);
+        var result = await summaryClient.GetGroupSummary(groupIdOrName);
         return ToolHelper.Serialize(result);
     }
 
     [McpServerTool(Name = "gitlab_get_project_summary"), Description("Gets a summary of a GitLab project including variable count and basic information.")]
     public async Task<string> GetProjectSummary(
-        [Description("The numeric ID of the project.")] int projectId,
-        [Description("Override GitLab domain. Falls back to configured default.")] string? gitlabDomain = null,
-        [Description("Override GitLab PAT. Falls back to configured default.")] string? pat = null)
+        [Description("The numeric ID of the project.")] int projectId)
     {
-        var result = await SummaryOperations.GetProjectSummary(projectId, pat ?? _opts.Pat, gitlabDomain ?? _opts.Domain);
+        var result = await summaryClient.GetProjectSummary(projectId);
         return ToolHelper.Serialize(result);
     }
 
     [McpServerTool(Name = "gitlab_get_group_projects_summary"), Description("Gets summaries of all projects in a GitLab group.")]
     public async Task<string> GetGroupProjectsSummary(
         [Description("The ID or name of the group.")] string groupIdOrName,
-        [Description("Whether to include projects from subgroups (default: true).")] bool includeSubgroups = true,
-        [Description("Override GitLab domain. Falls back to configured default.")] string? gitlabDomain = null,
-        [Description("Override GitLab PAT. Falls back to configured default.")] string? pat = null)
+        [Description("Whether to include projects from subgroups (default: true).")] bool includeSubgroups = true)
     {
-        var result = await SummaryOperations.GetGroupProjectsSummary(groupIdOrName, pat ?? _opts.Pat, gitlabDomain ?? _opts.Domain, includeSubgroups);
+        var result = await summaryClient.GetGroupProjectsSummary(groupIdOrName, includeSubgroups);
         return ToolHelper.Serialize(result);
     }
 }

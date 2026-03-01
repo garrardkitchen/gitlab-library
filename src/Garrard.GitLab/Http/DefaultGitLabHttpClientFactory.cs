@@ -1,4 +1,4 @@
-namespace Garrard.GitLab.Http;
+namespace Garrard.GitLab.Library.Http;
 
 /// <summary>
 /// Default implementation of <see cref="IGitLabHttpClientFactory"/> that delegates to

@@ -1,24 +1,33 @@
+using Garrard.GitLab.Library;
+using Microsoft.Extensions.Options;
+
 namespace Garrard.GitLab.Tests;
 
 /// <summary>
-/// Unit tests for <see cref="GroupVariablesOperations"/>.
+/// Unit tests for <see cref="GroupVariableClient"/>.
 /// </summary>
 public class GroupVariablesOperationsTests
 {
     private const string Pat = "test-pat-token";
+    private const string InvalidDomain = "not-a-real-domain.invalid";
+
+    private static GroupVariableClient CreateInvalidDomainClient() =>
+        new GroupVariableClient(
+            HttpTestHelpers.CreateRealClientFactory().Object,
+            Options.Create(new GitLabOptions { Pat = Pat, Domain = InvalidDomain }));
 
     [Fact]
     public async Task GetGroupVariable_InvalidDomain_ReturnsFailure()
     {
-        var result = await GroupVariablesOperations.GetGroupVariable("123", "MY_VAR", Pat, "not-a-real-domain.invalid");
+        var result = await CreateInvalidDomainClient().GetGroupVariable("123", "MY_VAR");
         Assert.True(result.IsFailure);
     }
 
     [Fact]
     public async Task CreateOrUpdateGroupVariable_InvalidDomain_ReturnsFailure()
     {
-        var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
-            "123", "KEY", "value", Pat, "not-a-real-domain.invalid");
+        var result = await CreateInvalidDomainClient().CreateOrUpdateGroupVariable(
+            "123", "KEY", "value");
         Assert.True(result.IsFailure);
     }
 
@@ -28,8 +37,8 @@ public class GroupVariablesOperationsTests
     public async Task CreateOrUpdateGroupVariable_ValidVariableTypes_DoNotThrow(string variableType)
     {
         var exception = await Record.ExceptionAsync(() =>
-            GroupVariablesOperations.CreateOrUpdateGroupVariable(
-                "123", "KEY", "value", Pat, "not-a-real-domain.invalid",
+            CreateInvalidDomainClient().CreateOrUpdateGroupVariable(
+                "123", "KEY", "value",
                 variableType: variableType));
         Assert.Null(exception);
     }
