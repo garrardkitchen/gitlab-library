@@ -317,6 +317,57 @@ class Program
             Console.WriteLine("Variable deleted successfully");
         }
         
+        // NEW: Summary operations examples
+        
+        // Get a group summary with counts
+        var groupSummary = await SummaryOperations.GetGroupSummary(
+            "my-group-name",     // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (groupSummary.IsSuccess)
+        {
+            var summary = groupSummary.Value;
+            Console.WriteLine($"Group: {summary.Name}");
+            Console.WriteLine($"  Subgroups: {summary.SubgroupCount}");
+            Console.WriteLine($"  Projects: {summary.ProjectCount}");
+            Console.WriteLine($"  Path: {summary.FullPath}");
+        }
+        
+        // Get summaries of all projects in a group
+        var projectSummaries = await SummaryOperations.GetGroupProjectsSummary(
+            "my-group-name",     // Group ID or name
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            true,                // Include subgroups
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (projectSummaries.IsSuccess)
+        {
+            foreach (var projectSummary in projectSummaries.Value)
+            {
+                Console.WriteLine($"Project: {projectSummary.Name}");
+                Console.WriteLine($"  Group: {projectSummary.GroupName}");
+                Console.WriteLine($"  Variables: {projectSummary.VariableCount}");
+                Console.WriteLine($"  Created: {projectSummary.CreatedAt:yyyy-MM-dd}");
+                Console.WriteLine($"  Last Activity: {projectSummary.LastActivityAt:yyyy-MM-dd}");
+            }
+        }
+        
+        // Get a basic project summary (limited information without group context)
+        var projectSummary = await SummaryOperations.GetProjectSummary(
+            123,                 // Project ID
+            gitlabPat,           // Personal Access Token
+            gitlabDomain,        // GitLab domain
+            Console.WriteLine    // Optional message handler
+        );
+        
+        if (projectSummary.IsSuccess)
+        {
+            Console.WriteLine($"Project variables: {projectSummary.Value.VariableCount}");
         // Create a new GitLab project with ProjectOperations.CreateGitLabProject
         var newProject = await ProjectOperations.CreateGitLabProject(
             "my-new-project",        // Project name
@@ -408,6 +459,21 @@ class Program
   - Optional: Enable or disable instance runners for the project
   - Returns complete project information including the project ID
   - Provides informational messages during the creation process
+
+## Summary Operations
+
+- **Group Summary**: Get comprehensive overview of a GitLab group
+  - Includes subgroup count and project count
+  - Shows basic group information and deletion status
+  - Automatically aggregates data from multiple API calls
+- **Project Summary**: Get basic information about a project (limited without group context)
+  - Includes variable count for the project
+  - Note: Full project details require knowing the group context
+- **Group Projects Summary**: Get summaries of all projects within a group
+  - Comprehensive project information including variables count
+  - Supports including projects from subgroups
+  - Shows creation date, last activity, group information
+  - Efficiently processes multiple projects in batch
 
 ## Contributing
 
