@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2025-10-25]
+## [1.0.0] - 2025-10-25
+
+### Added
+- **MCP Server** (`src/Garrard.GitLab.McpServer`): new ASP.NET Core + console hybrid server exposing all 25 library operations as [Model Context Protocol](https://modelcontextprotocol.io/) tools.
+  - Supports both `stdio` (default, for Claude Desktop) and `http` transports via `MCP_TRANSPORT` env var.
+  - HTTP transport includes API-key middleware (`Authorization: Bearer <MCP_API_KEY>`).
+  - Per-tool `pat`/`gitlabDomain` parameter overrides with fallback to `GL_PAT`/`GL_DOMAIN` env vars.
+  - Uses `ModelContextProtocol` 1.0.0 SDK.
+- **Dependency Injection**: added `AddGarrardGitLab()` extension method and `IGitLabHttpClientFactory` abstraction for testability.
+- **Unit tests** (`tests/Garrard.GitLab.Tests`): 36 tests using xUnit v3 + Moq covering all library operations and DI types.
+- **MCP server tests** (`tests/Garrard.GitLab.McpServer.Tests`): 14 tests covering `ApiKeyMiddleware` and `ToolHelper`.
+- **CI improvements**: upgraded to `actions/checkout@v4` + `actions/setup-dotnet@v4`, added NuGet cache, test result publishing via `EnricoMi/publish-unit-test-result-action@v2`, code coverage reporting via `irongut/CodeCoverageSummary@v1.3.0`, PR coverage comments, and a coverage threshold gate.
+- **Publish workflow**: now triggers on semver tags (`v*`) rather than `main` push; includes test gate before publish; uses `nuget-production` GitHub Environment.
+
+### Changed
+- Repository structure: all source projects moved into `src/`; tests in `tests/`.
+- Solution file updated to reference new paths.
+- Library version bumped to `1.0.0`.
+- CI no longer builds/packs against old root paths.
+
+
 - Updated version to 0.0.21
 
 ## [2025-03-29]

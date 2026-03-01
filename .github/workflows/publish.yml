@@ -2,35 +2,47 @@ name: Publish to NuGet
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - 'CHANGELOG.md'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
+    environment: nuget-production
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore Garrard.GitLab/Garrard.GitLab.csproj
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Pack
-      run: dotnet pack --configuration Release --no-build  Garrard.GitLab/Garrard.GitLab.csproj
+      - name: Build
+        run: dotnet build src/Garrard.GitLab/Garrard.GitLab.csproj --configuration Release --no-restore
 
-    - name: Publish to NuGet
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: dotnet nuget push Garrard.GitLab/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+      - name: Run tests (gate before publish)
+        run: dotnet test --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack src/Garrard.GitLab/Garrard.GitLab.csproj --configuration Release --no-build
+
+      - name: Publish to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push src/Garrard.GitLab/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
