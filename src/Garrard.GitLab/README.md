@@ -8,10 +8,22 @@ A .NET library for working with GitLab groups, projects, variables, and reposito
 dotnet add package Garrard.GitLab
 ```
 
+Install a specific version:
+
+```bash
+dotnet add package Garrard.GitLab --version 1.0.1
+```
+
+File-based Apps:
+
+```bash
+#:package Garrard.GitLab@1.0.1
+```
+
 Or add directly to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="1.0.0" />
+<PackageReference Include="Garrard.GitLab" Version="1.0.1" />
 ```
 
 ## Quick Start
