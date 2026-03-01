@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Garrard.GitLab;
+namespace Garrard.GitLab.Library;
 
 /// <summary>
 /// Configuration options for the Garrard.GitLab library.

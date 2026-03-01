@@ -1,18 +1,18 @@
 using System.ComponentModel;
-using Garrard.GitLab;
+using Garrard.GitLab.Library;
 using ModelContextProtocol.Server;
 
 namespace Garrard.GitLab.McpServer.Tools;
 
-/// <summary>MCP tools that wrap <see cref="FileOperations"/>. No GitLab auth required.</summary>
+/// <summary>MCP tools that wrap <see cref="FileClient"/>. No GitLab auth required.</summary>
 [McpServerToolType]
-public sealed class FileTools
+public sealed class FileTools(FileClient fileClient)
 {
     [McpServerTool(Name = "file_remove_temp_folder"), Description("Deletes a temporary folder and all its contents.")]
     public string RemoveTempFolder(
         [Description("The path of the folder to delete.")] string clonePath)
     {
-        FileOperations.RemoveTempFolder(clonePath);
+        fileClient.RemoveTempFolder(clonePath);
         return $"Folder '{clonePath}' removed (if it existed).";
     }
 
@@ -21,7 +21,7 @@ public sealed class FileTools
         [Description("The source directory path.")] string sourcePath,
         [Description("The destination directory path.")] string destinationPath)
     {
-        FileOperations.CopyFiles(sourcePath, destinationPath);
+        fileClient.CopyFiles(sourcePath, destinationPath);
         return $"Files copied from '{sourcePath}' to '{destinationPath}'.";
     }
 
@@ -31,7 +31,7 @@ public sealed class FileTools
         [Description("The name of the file to create.")] string fileName,
         [Description("The content to write into the file.")] string content)
     {
-        FileOperations.CreateFileWithContent(folderPath, fileName, content);
+        fileClient.CreateFileWithContent(folderPath, fileName, content);
         return $"File '{fileName}' created in '{folderPath}'.";
     }
 
@@ -43,7 +43,7 @@ public sealed class FileTools
         [Description("The new value to substitute in.")] string newValue,
         [Description("The assignment operator used in the file, e.g. ':' or '=' (default: ':').")] string assignmentOperator = ":")
     {
-        var result = await FileOperations.ReplacePlaceholderInFile(filePath, placeholderKey, placeholderValue, newValue, assignmentOperator);
+        var result = await fileClient.ReplacePlaceholderInFile(filePath, placeholderKey, placeholderValue, newValue, assignmentOperator);
         return ToolHelper.Serialize(result);
     }
 }

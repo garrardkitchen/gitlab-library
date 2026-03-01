@@ -16,7 +16,7 @@
     <PackageReleaseNotes>Please refer to the README</PackageReleaseNotes>
     <PackageTags>git, gitlab, library</PackageTags>
     <RepositoryUrl>https://github.com/garrardkitchen/gitlab-library</RepositoryUrl>
-    <RootNamespace>Garrard.GitLab</RootNamespace>
+    <RootNamespace>Garrard.GitLab.Library</RootNamespace>
     <UserSecretsId>6b1063c0-1e5e-4332-aa8d-24300aaa9ade</UserSecretsId>
   </PropertyGroup>
 

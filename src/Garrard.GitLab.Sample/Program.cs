@@ -1,6 +1,8 @@
-﻿using Garrard.GitLab;
-using Spectre.Console;
+﻿using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.DTOs;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 
 class Program
 {
@@ -17,15 +19,28 @@ class Program
         var gitlabPat = configuration["GL_PAT"] ?? throw new ArgumentNullException("GL_PAT", "GitLab PAT is not set in user secrets or environment variables.");
         var gitlabDomain = configuration["GL_DOMAIN"] ?? throw new ArgumentNullException("GL_DOMAIN", "GitLab domain is not set in user secrets or environment variables.");
         var gitlabNamespace = configuration["GL_NAMESPACE"] ?? throw new ArgumentNullException("GL_NAMESPACE", "GitLab namespace is not set in user secrets or environment variables.");
-        
+
+        // Set up DI container with Garrard.GitLab library clients
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts =>
+        {
+            opts.Pat = gitlabPat;
+            opts.Domain = gitlabDomain;
+        });
+        var provider = services.BuildServiceProvider();
+
+        var groupClient = provider.GetRequiredService<GroupClient>();
+        var projectClient = provider.GetRequiredService<ProjectClient>();
+        var groupVarClient = provider.GetRequiredService<GroupVariableClient>();
+        var gitClient = provider.GetRequiredService<GitClient>();
+        var fileClient = provider.GetRequiredService<FileClient>();
+        var summaryClient = provider.GetRequiredService<SummaryClient>();
 
          // Example 1: Finding groups by exact name or ID
         Console.WriteLine("\n--- Example: Finding groups by exact name or ID ---");
         
-        var findGroups = await GroupOperations.FindGroups(
-            "1436",  // Name or ID to search for
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
+        var findGroups = await groupClient.FindGroups(
+            "1436",                  // Name or ID to search for
             "name",                  // Order by (optional)
             "asc",                   // Sort direction (optional)
             message => Console.WriteLine($"[FindGroups] {message}")  // Optional message handler
@@ -52,10 +67,8 @@ class Program
         // Example 2: Searching groups using wildcard pattern
         Console.WriteLine("\n--- Example: Searching groups using wildcard pattern ---");
         
-        var searchGroups = await GroupOperations.SearchGroups(
-            "upe-alz",                 // Search pattern
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
+        var searchGroups = await groupClient.SearchGroups(
+            "upe-alz",               // Search pattern
             "name",                  // Order by (optional)
             "asc",                   // Sort direction (optional)
             message => Console.WriteLine($"[SearchGroups] {message}")  // Optional message handler
@@ -82,10 +95,8 @@ class Program
 
 
         
-        var subgroups = await GroupOperations.GetSubgroups(
-            "1437",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
+        var subgroups = await groupClient.GetSubgroups(
+            "1437",              // Group ID or name
             "name",              // Order by field (optional, default: name)
             "asc",               // Sort direction (optional, default: asc)
             Console.WriteLine    // Optional message handler
@@ -105,10 +116,8 @@ class Program
         }
         
         // Get all projects in a group
-        var projects = await ProjectOperations.GetProjectsInGroup(
-            "1437",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
+        var projects = await projectClient.GetProjectsInGroup(
+            "1437",              // Group ID or name
             true,                // Include subgroups (optional, default: true)
             "name",              // Order by field (optional, default: name)
             "asc",               // Sort direction (optional, default: asc)
@@ -132,9 +141,9 @@ class Program
         
         // Search and replace example:
         
-        FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
+        fileClient.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
         
-        var replacePlaceholderInFile = await FileOperations.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
+        var replacePlaceholderInFile = await fileClient.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
 
         if (replacePlaceholderInFile.IsFailure) 
         {
@@ -142,15 +151,13 @@ class Program
         }
         
         // Create or update a group variable
-        var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
+        var result = await groupVarClient.CreateOrUpdateGroupVariable(
             "1607",              // Group ID
             "NEW_VAR",           // Variable key
             "FOO",               // Variable value
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
             "env_var",           // Variable type (optional, default: env_var)
             false,               // Is protected (optional, default: false)
-            true,                // Is masked (optional, default: false) - HTTP API fails if used so not included
+            true,                // Is masked (optional, default: false)
             "*",                 // Environment scope (optional, default: *)
              Console.WriteLine
         );
@@ -160,11 +167,9 @@ class Program
             Console.WriteLine($"Variable created/updated successfully");
         }
 
-        var variable = await GroupVariablesOperations.GetGroupVariable(
+        var variable = await groupVarClient.GetGroupVariable(
             "1607",              // Group ID
-            "NEW_VAR",           // Variable key
-            gitlabPat,           // Personal Access Token
-            gitlabDomain         // GitLab domain
+            "NEW_VAR"            // Variable key
         );
 
         if (variable.IsSuccess)
@@ -176,10 +181,8 @@ class Program
         // Example 3: Getting subgroups
         Console.WriteLine("\n--- Example: Getting subgroups ---");
         
-        var getSubgroups = await GroupOperations.GetSubgroups(
+        var getSubgroups = await groupClient.GetSubgroups(
             "parent-group-name",     // Parent group ID or name
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
             "name",                  // Order by (optional)
             "asc",                   // Sort direction (optional)
             message => Console.WriteLine($"[GetSubgroups] {message}")  // Optional message handler
@@ -204,10 +207,8 @@ class Program
         // Example 4: Getting projects in a group
         Console.WriteLine("\n--- Example: Getting projects in a group ---");
         
-        var getProjects = await ProjectOperations.GetProjectsInGroup(
+        var getProjects = await projectClient.GetProjectsInGroup(
             "group-name",            // Group ID or name
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
             true,                    // Include subgroups (optional)
             "name",                  // Order by (optional)
             "asc",                   // Sort direction (optional)
@@ -234,10 +235,8 @@ class Program
         // NEW: Summary operations example
         Console.WriteLine("\n--- Example: Getting group summary ---");
         
-        var groupSummary = await SummaryOperations.GetGroupSummary(
+        var groupSummary = await summaryClient.GetGroupSummary(
             "1437",              // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
             Console.WriteLine    // Optional message handler
         );
         
@@ -260,10 +259,8 @@ class Program
         // NEW: Project summaries for a group
         Console.WriteLine("\n--- Example: Getting project summaries for group ---");
         
-        var projectSummaries = await SummaryOperations.GetGroupProjectsSummary(
+        var projectSummaries = await summaryClient.GetGroupProjectsSummary(
             "1437",              // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
             true,                // Include subgroups
             Console.WriteLine    // Optional message handler
         );
@@ -325,7 +322,7 @@ class Program
         
         // Create a new GitLab project
         
-        var projectCreation = await GitOperations.CreateGitLabProject(newProjectName, gitlabPat, gitlabDomain,
+        var projectCreation = await gitClient.CreateGitLabProject(newProjectName,
             projectName =>
             {
                 AnsiConsole.MarkupLine($"[yellow] - [orangered1]{projectName}[/] exists, establishing an available project name...[/]");
@@ -346,41 +343,41 @@ class Program
         
         // Download a git repository from GitLab
         
-        GitOperations.DownloadGitRepository(repoUrl, clonePath, pat: gitlabPat);
+        gitClient.DownloadGitRepository(repoUrl, clonePath);
 
         AnsiConsole.MarkupLine($"[yellow]Cloning [orangered1]{projectCreation.Value.HttpUrlToRepo}[/][/]");
         
         // Clone the repository
 
-        GitOperations.CloneGitLabProject($"{projectCreation.Value.HttpUrlToRepo}", $"{rootFolder}/{newProjectName}", pat: gitlabPat);
+        gitClient.CloneGitLabProject($"{projectCreation.Value.HttpUrlToRepo}", $"{rootFolder}/{newProjectName}");
         
         // Create a README.md then push to main
 
-        FileOperations.CreateFileWithContent($"{rootFolder}/{newProjectName}", "README.md", $"# {projectCreation.Value.Name}");
+        fileClient.CreateFileWithContent($"{rootFolder}/{newProjectName}", "README.md", $"# {projectCreation.Value.Name}");
 
-        GitOperations.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", "initial commit", "main");
+        gitClient.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", "initial commit", "main");
 
         // Copy files from the downloaded repository to the new project
 
         AnsiConsole.MarkupLine($"[yellow]Copying files from [orangered1]{clonePath}[/] into [orangered1]./{newProjectName}[/][/]");
 
-        FileOperations.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
+        fileClient.CopyFiles(clonePath, $"{rootFolder}/{newProjectName}");
 
         AnsiConsole.MarkupLine($"[yellow]Commit changes and pushing to [orangered1]gitlab:{newProjectName}[/][/]");
 
         // Perform a git commit and push
         
-        GitOperations.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", commitMessage, branchName);
+        gitClient.BranchCommitPushChanges($"{rootFolder}/{newProjectName}", commitMessage, branchName);
         
         AnsiConsole.MarkupLine($"[green]Tidying up by removing the [orangered1]{clonePath}[/] folder[/]");
         
         // Remove the temporary folder
         
-        FileOperations.RemoveTempFolder(clonePath);
+        fileClient.RemoveTempFolder(clonePath);
         
         // Move project to another group
 
-        var moveProjectToGroup = await GitOperations.TransferProjectToGroupOrNamespace(projectCreation.Value.Id, 1607, gitlabPat, gitlabDomain);
+        var moveProjectToGroup = await gitClient.TransferProjectToGroupOrNamespace(projectCreation.Value.Id, 1607);
 
         if (moveProjectToGroup.IsFailure)
         {

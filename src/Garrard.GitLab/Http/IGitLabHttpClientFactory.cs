@@ -1,4 +1,4 @@
-namespace Garrard.GitLab.Http;
+namespace Garrard.GitLab.Library.Http;
 
 /// <summary>
 /// Abstraction for creating authenticated <see cref="HttpClient"/> instances for GitLab API calls.

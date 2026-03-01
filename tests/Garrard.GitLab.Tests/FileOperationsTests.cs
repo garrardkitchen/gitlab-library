@@ -1,12 +1,15 @@
+using Garrard.GitLab.Library;
+
 namespace Garrard.GitLab.Tests;
 
 /// <summary>
-/// Unit tests for <see cref="FileOperations"/>.
+/// Unit tests for <see cref="FileClient"/>.
 /// These tests use real file system I/O via temporary directories.
 /// </summary>
 public class FileOperationsTests : IDisposable
 {
     private readonly string _tempDir;
+    private readonly FileClient _fileClient = new FileClient();
 
     public FileOperationsTests()
     {
@@ -26,7 +29,7 @@ public class FileOperationsTests : IDisposable
         var folderToDelete = Path.Combine(_tempDir, "to-delete");
         Directory.CreateDirectory(folderToDelete);
 
-        FileOperations.RemoveTempFolder(folderToDelete);
+        _fileClient.RemoveTempFolder(folderToDelete);
 
         Assert.False(Directory.Exists(folderToDelete));
     }
@@ -35,7 +38,7 @@ public class FileOperationsTests : IDisposable
     public void RemoveTempFolder_NonExistentFolder_DoesNotThrow()
     {
         var nonExistent = Path.Combine(_tempDir, "does-not-exist");
-        var exception = Record.Exception(() => FileOperations.RemoveTempFolder(nonExistent));
+        var exception = Record.Exception(() => _fileClient.RemoveTempFolder(nonExistent));
         Assert.Null(exception);
     }
 
@@ -46,7 +49,7 @@ public class FileOperationsTests : IDisposable
         const string fileName = "test.txt";
         const string content = "Hello, world!";
 
-        FileOperations.CreateFileWithContent(folderPath, fileName, content);
+        _fileClient.CreateFileWithContent(folderPath, fileName, content);
 
         var filePath = Path.Combine(folderPath, fileName);
         Assert.True(File.Exists(filePath));
@@ -58,7 +61,7 @@ public class FileOperationsTests : IDisposable
     {
         var folderPath = Path.Combine(_tempDir, "new-folder", "nested");
 
-        FileOperations.CreateFileWithContent(folderPath, "readme.md", "# Title");
+        _fileClient.CreateFileWithContent(folderPath, "readme.md", "# Title");
 
         Assert.True(Directory.Exists(folderPath));
         Assert.True(File.Exists(Path.Combine(folderPath, "readme.md")));
@@ -75,7 +78,7 @@ public class FileOperationsTests : IDisposable
         File.WriteAllText(Path.Combine(sourceDir, "file.txt"), "content");
         File.WriteAllText(Path.Combine(gitDir, "config"), "git config");
 
-        FileOperations.CopyFiles(sourceDir, destDir);
+        _fileClient.CopyFiles(sourceDir, destDir);
 
         Assert.True(File.Exists(Path.Combine(destDir, "file.txt")));
         Assert.False(Directory.Exists(Path.Combine(destDir, ".git")));
@@ -87,7 +90,7 @@ public class FileOperationsTests : IDisposable
         var filePath = Path.Combine(_tempDir, "test.yml");
         await File.WriteAllTextAsync(filePath, "KEY: <placeholder>");
 
-        var result = await FileOperations.ReplacePlaceholderInFile(filePath, "KEY", "<placeholder>", "new-value");
+        var result = await _fileClient.ReplacePlaceholderInFile(filePath, "KEY", "<placeholder>", "new-value");
 
         Assert.True(result.IsSuccess);
         var content = await File.ReadAllTextAsync(filePath);
@@ -98,7 +101,7 @@ public class FileOperationsTests : IDisposable
     [Fact]
     public async Task ReplacePlaceholderInFile_FileNotFound_ReturnsFailure()
     {
-        var result = await FileOperations.ReplacePlaceholderInFile(
+        var result = await _fileClient.ReplacePlaceholderInFile(
             Path.Combine(_tempDir, "missing.yml"), "KEY", "<placeholder>", "value");
 
         Assert.True(result.IsFailure);
@@ -111,7 +114,7 @@ public class FileOperationsTests : IDisposable
         var filePath = Path.Combine(_tempDir, "no-pattern.yml");
         await File.WriteAllTextAsync(filePath, "OTHER_KEY: something");
 
-        var result = await FileOperations.ReplacePlaceholderInFile(filePath, "KEY", "<placeholder>", "value");
+        var result = await _fileClient.ReplacePlaceholderInFile(filePath, "KEY", "<placeholder>", "value");
 
         Assert.True(result.IsFailure);
         Assert.Contains("not found", result.Error);
@@ -126,7 +129,7 @@ public class FileOperationsTests : IDisposable
         var filePath = Path.Combine(_tempDir, $"test-{Guid.NewGuid()}.txt");
         await File.WriteAllTextAsync(filePath, fileContent);
 
-        var result = await FileOperations.ReplacePlaceholderInFile(filePath, key, placeholder, newVal, ":");
+        var result = await _fileClient.ReplacePlaceholderInFile(filePath, key, placeholder, newVal, ":");
 
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error : string.Empty);
         var actual = await File.ReadAllTextAsync(filePath);
