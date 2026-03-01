@@ -4,6 +4,7 @@ A .NET 10 library and MCP server for automating GitLab operations — creating g
 
 [![CI](https://github.com/kitcheng/gitlab-library/actions/workflows/ci.yml/badge.svg)](https://github.com/kitcheng/gitlab-library/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Garrard.GitLab.svg)](https://www.nuget.org/packages/Garrard.GitLab)
+[![Docker Hub](https://img.shields.io/docker/v/garrardkitchen/gitlab-mcp?label=Docker%20Hub)](https://hub.docker.com/r/garrardkitchen/gitlab-mcp)
 
 ---
 
@@ -15,12 +16,14 @@ src/
   Garrard.GitLab/              ← .NET library (NuGet package)
   Garrard.GitLab.Sample/       ← Sample console app
   Garrard.GitLab.McpServer/    ← MCP server (stdio & HTTP)
+    Dockerfile                 ← Docker image build
 tests/
   Garrard.GitLab.Tests/        ← Library unit tests (xUnit v3)
   Garrard.GitLab.McpServer.Tests/ ← MCP server unit tests
 .github/workflows/
   ci.yml                       ← Build, test, coverage on PRs
   publish.yml                  ← Publish to NuGet on semver tags
+  docker.yml                   ← Build & push Docker image on semver tags
 ```
 
 ---
@@ -115,6 +118,48 @@ MCP_TRANSPORT=http MCP_API_KEY=my-secret GL_PAT=glpat-xxxx GL_DOMAIN=gitlab.com 
   dotnet run --project src/Garrard.GitLab.McpServer
 ```
 
+### Running with Docker
+
+The MCP server is published as a Docker image to [Docker Hub (`garrardkitchen/gitlab-mcp`)](https://hub.docker.com/r/garrardkitchen/gitlab-mcp) on every semver tag.
+
+#### stdio transport (Claude Desktop)
+
+Pass your PAT and domain as environment variables. The `-i` flag keeps stdin open for MCP protocol communication.
+
+```jsonc
+// Claude Desktop mcp config (~/.config/claude/claude_desktop_config.json)
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-e", "GL_PAT=glpat-xxxx",
+        "-e", "GL_DOMAIN=gitlab.com",
+        "garrardkitchen/gitlab-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+#### HTTP streaming transport
+
+Set `MCP_TRANSPORT=http` and publish port `8080`. Optionally protect the endpoint with `MCP_API_KEY`.
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e MCP_TRANSPORT=http \
+  -e MCP_API_KEY=my-secret \
+  -e GL_PAT=glpat-xxxx \
+  -e GL_DOMAIN=gitlab.com \
+  garrardkitchen/gitlab-mcp:latest
+```
+
+The server is then reachable at `http://localhost:8080/mcp`. Pass `Authorization: Bearer my-secret` on all requests when `MCP_API_KEY` is set.
+
+---
+
 ### Available MCP Tools (25 tools)
 
 | Category | Tool Name | Description |
@@ -187,7 +232,8 @@ dotnet test tests/Garrard.GitLab.McpServer.Tests/
 ## CI/CD
 
 - **CI** triggers on `feat/**` and `fix/**` branches, and on pull requests to `main`.
-- **Publish** triggers on semver tags (`v*`), e.g. `git tag v1.0.0 && git push --tags`.
+- **Publish (NuGet)** triggers on semver tags (`v*`), e.g. `git tag v1.0.0 && git push --tags`.
+- **Publish (Docker)** triggers on semver tags (`v*`) — builds and pushes `garrardkitchen/gitlab-mcp:<version>` and `:latest` to [Docker Hub](https://hub.docker.com/r/garrardkitchen/gitlab-mcp). Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets in the `docker-production` GitHub Environment.
 - Test results and code coverage summaries are posted as PR comments.
 - Build fails if line coverage drops below 60% (warn) / 80% (fail).
 

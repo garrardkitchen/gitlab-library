@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Docker image** (`garrardkitchen/gitlab-mcp`): the MCP server is now published to [Docker Hub](https://hub.docker.com/r/garrardkitchen/gitlab-mcp) on every semver tag.
+  - Multi-stage `Dockerfile` in `src/Garrard.GitLab.McpServer/` based on `mcr.microsoft.com/dotnet/aspnet:10.0`.
+  - New GitHub Actions workflow (`.github/workflows/docker.yml`) builds and pushes `garrardkitchen/gitlab-mcp:<version>` and `:latest`. Requires `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets in the `docker-production` environment.
+  - **stdio transport** (Claude Desktop): `docker run --rm -i -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
+  - **HTTP streaming transport**: `docker run --rm -p 8080:8080 -e MCP_TRANSPORT=http -e MCP_API_KEY=... -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
+- Updated `README.md` with Docker Hub badge, Docker usage examples, and CI/CD section.
+
 ## [1.0.2] - 2026-03-01
 
 ### Added
