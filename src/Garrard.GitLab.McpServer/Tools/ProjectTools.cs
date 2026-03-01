@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.Enums;
 using ModelContextProtocol.Server;
 
 namespace Garrard.GitLab.McpServer.Tools;
@@ -45,11 +46,12 @@ public sealed class ProjectTools(ProjectClient projectClient)
         [Description("Variable type: env_var or file (default: env_var).")] string variableType = "env_var",
         [Description("Whether the variable is protected (default: false).")] bool isProtected = false,
         [Description("Whether the variable is masked (default: false).")] bool isMasked = false,
-        [Description("Environment scope (default: *).")] string? environmentScope = "*")
+        [Description("Environment scope (default: *).")] string? environmentScope = "*",
+        [Description("Whether the variable value is hidden after creation (default: true).")] bool isHidden = true)
     {
         var result = await projectClient.CreateOrUpdateProjectVariable(
             projectId, variableKey, variableValue,
-            variableType, isProtected, isMasked, environmentScope);
+            variableType, isProtected, isMasked, environmentScope, isHidden);
         return ToolHelper.Serialize(result);
     }
 
@@ -71,5 +73,48 @@ public sealed class ProjectTools(ProjectClient projectClient)
     {
         var result = await projectClient.CreateGitLabProject(name, parentGroupId, enableInstanceRunners);
         return ToolHelper.Serialize(result);
+    }
+
+    [McpServerTool(Name = "gitlab_create_project_access_token"), Description("Creates a project access token with configurable scopes and access level.")]
+    public async Task<string> CreateProjectAccessToken(
+        [Description("The ID of the project.")] string projectId,
+        [Description("The name of the access token (default: GL_TOKEN).")] string name = "GL_TOKEN",
+        [Description("Comma-separated scopes: api, read_api, read_repository, write_repository, read_registry, write_registry, read_package_registry, write_package_registry, create_runner, manage_runner, ai_features, k8s_proxy (default: write_repository).")] string scopes = "write_repository",
+        [Description("Access level: 10=Guest, 20=Reporter, 30=Developer, 40=Maintainer, 50=Owner (default: 40).")] int accessLevel = 40,
+        [Description("Expiry date in YYYY-MM-DD format (default: one year from today).")] string? expiresAt = null)
+    {
+        var scopeFlags = ParseScopes(scopes);
+        DateOnly? expiry = expiresAt is not null ? DateOnly.Parse(expiresAt) : null;
+        var result = await projectClient.CreateProjectAccessToken(
+            projectId, name, scopeFlags, (AccessLevel)accessLevel, expiry);
+        return ToolHelper.Serialize(result);
+    }
+
+    private static ProjectAccessTokenScope ParseScopes(string scopes)
+    {
+        var flags = ProjectAccessTokenScope.ReadRepository; // safe fallback
+        flags = 0;
+        foreach (var scope in scopes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            flags |= scope.ToLowerInvariant() switch
+            {
+                "api"                    => ProjectAccessTokenScope.Api,
+                "read_api"               => ProjectAccessTokenScope.ReadApi,
+                "read_repository"        => ProjectAccessTokenScope.ReadRepository,
+                "write_repository"       => ProjectAccessTokenScope.WriteRepository,
+                "read_registry"          => ProjectAccessTokenScope.ReadRegistry,
+                "write_registry"         => ProjectAccessTokenScope.WriteRegistry,
+                "read_package_registry"  => ProjectAccessTokenScope.ReadPackageRegistry,
+                "write_package_registry" => ProjectAccessTokenScope.WritePackageRegistry,
+                "create_runner"          => ProjectAccessTokenScope.CreateRunner,
+                "manage_runner"          => ProjectAccessTokenScope.ManageRunner,
+                "ai_features"            => ProjectAccessTokenScope.AiFeatures,
+                "k8s_proxy"              => ProjectAccessTokenScope.K8sProxy,
+                "read_observability"     => ProjectAccessTokenScope.ReadObservability,
+                "write_observability"    => ProjectAccessTokenScope.WriteObservability,
+                _                        => 0
+            };
+        }
+        return flags == 0 ? ProjectAccessTokenScope.WriteRepository : flags;
     }
 }

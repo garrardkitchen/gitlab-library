@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CSharpFunctionalExtensions;
 using Garrard.GitLab.Library.DTOs;
+using Garrard.GitLab.Library.Enums;
 using Garrard.GitLab.Library.Http;
 using Microsoft.Extensions.Options;
 
@@ -205,6 +206,7 @@ public sealed class ProjectClient
         bool isProtected = false,
         bool isMasked = false,
         string? environmentScope = "*",
+        bool isHidden = true,
         Action<string>? onMessage = null)
     {
         var client = _factory.CreateClient();
@@ -225,7 +227,8 @@ public sealed class ProjectClient
                 new("value", variableValue),
                 new("variable_type", variableType),
                 new("protected", isProtected.ToString().ToLower()),
-                new("masked", isMasked.ToString().ToLower())
+                new("masked", isMasked.ToString().ToLower()),
+                new("hidden", isHidden.ToString().ToLower())
             };
 
             if (environmentScope != null)
@@ -405,5 +408,81 @@ public sealed class ProjectClient
         {
             return Result.Failure<GitLabProject>($"An error occurred: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Creates a project access token via the GitLab API.
+    /// </summary>
+    public async Task<Result<GitLabProjectAccessToken>> CreateProjectAccessToken(
+        string projectId,
+        string name = "GL_TOKEN",
+        ProjectAccessTokenScope scopes = ProjectAccessTokenScope.WriteRepository,
+        AccessLevel accessLevel = AccessLevel.Maintainer,
+        DateOnly? expiresAt = null,
+        Action<string>? onMessage = null)
+    {
+        var client = _factory.CreateClient();
+
+        try
+        {
+            onMessage?.Invoke($"Creating project access token '{name}' for project {projectId}...");
+
+            var expiry = expiresAt ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1));
+
+            var body = new
+            {
+                name,
+                scopes = ScopesToStrings(scopes),
+                expires_at = expiry.ToString("yyyy-MM-dd"),
+                access_level = (int)accessLevel
+            };
+
+            var json = JsonSerializer.Serialize(body);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var url = $"https://{_opts.Domain}/api/v4/projects/{Uri.EscapeDataString(projectId)}/access_tokens";
+
+            var response = await client.PostAsync(url, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var token = JsonSerializer.Deserialize<GitLabProjectAccessToken>(responseBody);
+
+                if (token == null)
+                    return Result.Failure<GitLabProjectAccessToken>("Failed to deserialize access token data");
+
+                onMessage?.Invoke($"Successfully created access token '{name}' expiring {expiry:yyyy-MM-dd}");
+                return Result.Success(token);
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                return Result.Failure<GitLabProjectAccessToken>($"Failed to create access token: {response.StatusCode}. {errorResponse}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<GitLabProjectAccessToken>($"An error occurred: {ex.Message}");
+        }
+    }
+
+    private static string[] ScopesToStrings(ProjectAccessTokenScope scopes)
+    {
+        var result = new List<string>();
+        if (scopes.HasFlag(ProjectAccessTokenScope.Api))                  result.Add("api");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ReadApi))              result.Add("read_api");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ReadRepository))       result.Add("read_repository");
+        if (scopes.HasFlag(ProjectAccessTokenScope.WriteRepository))      result.Add("write_repository");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ReadRegistry))         result.Add("read_registry");
+        if (scopes.HasFlag(ProjectAccessTokenScope.WriteRegistry))        result.Add("write_registry");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ReadPackageRegistry))  result.Add("read_package_registry");
+        if (scopes.HasFlag(ProjectAccessTokenScope.WritePackageRegistry)) result.Add("write_package_registry");
+        if (scopes.HasFlag(ProjectAccessTokenScope.CreateRunner))         result.Add("create_runner");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ManageRunner))         result.Add("manage_runner");
+        if (scopes.HasFlag(ProjectAccessTokenScope.AiFeatures))           result.Add("ai_features");
+        if (scopes.HasFlag(ProjectAccessTokenScope.K8sProxy))             result.Add("k8s_proxy");
+        if (scopes.HasFlag(ProjectAccessTokenScope.ReadObservability))    result.Add("read_observability");
+        if (scopes.HasFlag(ProjectAccessTokenScope.WriteObservability))   result.Add("write_observability");
+        return result.ToArray();
     }
 }
