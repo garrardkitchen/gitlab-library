@@ -1,84 +1,57 @@
+using CSharpFunctionalExtensions;
 using Garrard.GitLab.McpServer.Tools;
-using Microsoft.Extensions.Configuration;
 
 namespace Garrard.GitLab.McpServer.Tests;
 
 /// <summary>
-/// Unit tests for the <see cref="ToolHelper"/> utility class.
+/// Unit tests for <see cref="ToolHelper"/> serialisation methods.
 /// </summary>
 public class ToolHelperTests
 {
-    private static IConfiguration BuildConfig(Dictionary<string, string?> values) =>
-        new ConfigurationBuilder()
-            .AddInMemoryCollection(values)
-            .Build();
-
-    [Fact]
-    public void Resolve_WithExplicitValue_ReturnsExplicitValue()
-    {
-        var config = BuildConfig(new() { ["GL_PAT"] = "env-token" });
-        var result = ToolHelper.Resolve(config, "explicit-token", "GL_PAT", "pat");
-        Assert.Equal("explicit-token", result);
-    }
-
-    [Fact]
-    public void Resolve_WithNullValueAndEnvKey_ReturnsEnvValue()
-    {
-        var config = BuildConfig(new() { ["GL_PAT"] = "env-token" });
-        var result = ToolHelper.Resolve(config, null, "GL_PAT", "pat");
-        Assert.Equal("env-token", result);
-    }
-
-    [Fact]
-    public void Resolve_WithNullValueAndMissingEnvKey_ThrowsInvalidOperationException()
-    {
-        var config = BuildConfig(new Dictionary<string, string?>());
-        var ex = Assert.Throws<InvalidOperationException>(
-            () => ToolHelper.Resolve(config, null, "GL_PAT", "pat"));
-        Assert.Contains("GL_PAT", ex.Message);
-        Assert.Contains("pat", ex.Message);
-    }
-
-    [Fact]
-    public void Resolve_WithEmptyExplicitValue_ThrowsInvalidOperationException()
-    {
-        // Empty string is treated the same as missing — it doesn't satisfy the requirement.
-        var config = BuildConfig(new() { ["GL_DOMAIN"] = "gitlab.com" });
-        var ex = Assert.Throws<InvalidOperationException>(
-            () => ToolHelper.Resolve(config, "", "GL_DOMAIN", "gitlabDomain"));
-        Assert.Contains("GL_DOMAIN", ex.Message);
-    }
+    // --- Serialize<T> (Result<T>) ---
 
     [Fact]
     public void Serialize_SuccessfulResult_ReturnsJson()
     {
-        var result = CSharpFunctionalExtensions.Result.Success(new { id = 1, name = "test" });
+        var result = Result.Success(new { name = "test", value = 42 });
+
         var json = ToolHelper.Serialize(result);
-        Assert.Contains("\"id\"", json);
+
         Assert.Contains("\"name\"", json);
+        Assert.Contains("\"test\"", json);
+        Assert.Contains("\"value\"", json);
+        Assert.Contains("42", json);
     }
 
     [Fact]
     public void Serialize_FailedResult_ReturnsErrorString()
     {
-        var result = CSharpFunctionalExtensions.Result.Failure<object>("Something went wrong");
-        var json = ToolHelper.Serialize(result);
-        Assert.StartsWith("Error:", json);
-        Assert.Contains("Something went wrong", json);
+        var result = Result.Failure<string>("something went wrong");
+
+        var output = ToolHelper.Serialize(result);
+
+        Assert.Equal("Error: something went wrong", output);
     }
 
+    // --- Serialize (Result) ---
+
     [Fact]
-    public void Serialize_UnitSuccessResult_ReturnsSuccess()
+    public void Serialize_UnitSuccessResult_ReturnsSuccessString()
     {
-        var result = CSharpFunctionalExtensions.Result.Success();
-        Assert.Equal("Success", ToolHelper.Serialize(result));
+        var result = Result.Success();
+
+        var output = ToolHelper.Serialize(result);
+
+        Assert.Equal("Success", output);
     }
 
     [Fact]
     public void Serialize_UnitFailureResult_ReturnsErrorString()
     {
-        var result = CSharpFunctionalExtensions.Result.Failure("API error");
-        var text = ToolHelper.Serialize(result);
-        Assert.StartsWith("Error:", text);
+        var result = Result.Failure("unit failure");
+
+        var output = ToolHelper.Serialize(result);
+
+        Assert.Equal("Error: unit failure", output);
     }
 }

@@ -1,29 +1,29 @@
 using System.ComponentModel;
+using Garrard.GitLab;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 
 namespace Garrard.GitLab.McpServer.Tools;
 
-/// <summary>MCP tools that wrap <see cref="Garrard.GitLab.GroupVariablesOperations"/>.</summary>
+/// <summary>MCP tools that wrap <see cref="GroupVariablesOperations"/>.</summary>
 [McpServerToolType]
-public static class GroupVariableTools
+public sealed class GroupVariableTools(IOptions<GitLabOptions> options)
 {
+    private readonly GitLabOptions _opts = options.Value;
+
     [McpServerTool(Name = "gitlab_get_group_variable"), Description("Gets a specific variable from a GitLab group.")]
-    public static async Task<string> GetGroupVariable(
-        IConfiguration config,
+    public async Task<string> GetGroupVariable(
         [Description("The ID of the group.")] string groupId,
         [Description("The key of the variable to retrieve.")] string variableKey,
-        [Description("GitLab domain (e.g. gitlab.com). Defaults to GL_DOMAIN env var.")] string? gitlabDomain = null,
-        [Description("GitLab Personal Access Token. Defaults to GL_PAT env var.")] string? pat = null)
+        [Description("Override GitLab domain. Falls back to configured default.")] string? gitlabDomain = null,
+        [Description("Override GitLab PAT. Falls back to configured default.")] string? pat = null)
     {
-        var resolvedPat = ToolHelper.Resolve(config, pat, "GL_PAT", "pat");
-        var resolvedDomain = ToolHelper.Resolve(config, gitlabDomain, "GL_DOMAIN", "gitlabDomain");
-        var result = await GroupVariablesOperations.GetGroupVariable(groupId, variableKey, resolvedPat, resolvedDomain);
+        var result = await GroupVariablesOperations.GetGroupVariable(groupId, variableKey, pat ?? _opts.Pat, gitlabDomain ?? _opts.Domain);
         return ToolHelper.Serialize(result);
     }
 
     [McpServerTool(Name = "gitlab_create_or_update_group_variable"), Description("Creates or updates a variable in a GitLab group.")]
-    public static async Task<string> CreateOrUpdateGroupVariable(
-        IConfiguration config,
+    public async Task<string> CreateOrUpdateGroupVariable(
         [Description("The ID of the group.")] string groupId,
         [Description("The variable key.")] string variableKey,
         [Description("The variable value.")] string variableValue,
@@ -31,13 +31,11 @@ public static class GroupVariableTools
         [Description("Whether the variable is protected (default: false).")] bool isProtected = false,
         [Description("Whether the variable is masked (default: false).")] bool isMasked = false,
         [Description("Environment scope (default: *).")] string? environmentScope = "*",
-        [Description("GitLab domain (e.g. gitlab.com). Defaults to GL_DOMAIN env var.")] string? gitlabDomain = null,
-        [Description("GitLab Personal Access Token. Defaults to GL_PAT env var.")] string? pat = null)
+        [Description("Override GitLab domain. Falls back to configured default.")] string? gitlabDomain = null,
+        [Description("Override GitLab PAT. Falls back to configured default.")] string? pat = null)
     {
-        var resolvedPat = ToolHelper.Resolve(config, pat, "GL_PAT", "pat");
-        var resolvedDomain = ToolHelper.Resolve(config, gitlabDomain, "GL_DOMAIN", "gitlabDomain");
         var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
-            groupId, variableKey, variableValue, resolvedPat, resolvedDomain,
+            groupId, variableKey, variableValue, pat ?? _opts.Pat, gitlabDomain ?? _opts.Domain,
             variableType, isProtected, isMasked, environmentScope);
         return ToolHelper.Serialize(result);
     }

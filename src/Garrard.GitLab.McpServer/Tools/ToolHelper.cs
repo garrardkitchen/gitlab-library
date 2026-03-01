@@ -3,7 +3,7 @@ using CSharpFunctionalExtensions;
 
 namespace Garrard.GitLab.McpServer.Tools;
 
-/// <summary>Shared helper utilities used by all MCP tool classes.</summary>
+/// <summary>Shared serialisation helpers used by all MCP tool classes.</summary>
 internal static class ToolHelper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -12,21 +12,7 @@ internal static class ToolHelper
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    /// <summary>
-    /// Resolves a value by preferring the explicit <paramref name="value"/> parameter,
-    /// then falling back to a configuration key. Throws if neither is available.
-    /// </summary>
-    internal static string Resolve(IConfiguration config, string? value, string envKey, string paramName)
-    {
-        var resolved = value ?? config[envKey];
-        if (string.IsNullOrWhiteSpace(resolved))
-            throw new InvalidOperationException(
-                $"'{paramName}' was not provided and '{envKey}' is not set. " +
-                $"Set the environment variable or pass the parameter explicitly.");
-        return resolved;
-    }
-
-    /// <summary>Serializes a successful result or returns an error string.</summary>
+    /// <summary>Serializes a successful result to JSON, or returns an error string.</summary>
     internal static string Serialize<T>(Result<T> result) =>
         result.IsSuccess
             ? JsonSerializer.Serialize(result.Value, JsonOptions)
