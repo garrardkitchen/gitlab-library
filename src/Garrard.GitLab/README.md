@@ -11,19 +11,19 @@ dotnet add package Garrard.GitLab
 Install a specific version:
 
 ```bash
-dotnet add package Garrard.GitLab --version 1.0.1
+dotnet add package Garrard.GitLab --version 1.0.2
 ```
 
 File-based Apps:
 
 ```bash
-#:package Garrard.GitLab@1.0.1
+#:package Garrard.GitLab@1.0.2
 ```
 
 Or add directly to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="1.0.1" />
+<PackageReference Include="Garrard.GitLab" Version="1.0.2" />
 ```
 
 ## Quick Start
@@ -32,6 +32,7 @@ Register the library with your DI container once at startup:
 
 ```csharp
 using Garrard.GitLab.Library;
+using Garrard.GitLab.Library.Enums;  // AccessLevel, ProjectAccessTokenScope
 
 services.AddGarrardGitLab(opts =>
 {
@@ -117,12 +118,62 @@ var project = await projectClient.CreateGitLabProject("my-app", groupId: 42);
 // Transfer a project to a different group
 var transfer = await projectClient.TransferProjectToGroupOrNamespace(projectId: 99, "target-group");
 
-// Project variables
+// Project variables (isHidden: true by default — value hidden after creation)
 var vars      = await projectClient.GetProjectVariables(projectId: 99);
 var variable  = await projectClient.GetProjectVariable(99, "API_KEY");
 var upserted  = await projectClient.CreateOrUpdateProjectVariable(99, "API_KEY", "secret");
 var deleted   = await projectClient.DeleteProjectVariable(99, "API_KEY");
+
+// Create a project access token
+var tokenResult = await projectClient.CreateProjectAccessToken(
+    projectId:   "99",
+    name:        "GL_TOKEN",                                 // default
+    scopes:      ProjectAccessTokenScope.WriteRepository,    // default
+    accessLevel: AccessLevel.Maintainer,                     // default (40)
+    expiresAt:   new DateOnly(2027, 1, 1));                  // default: +1 year
+
+if (tokenResult.IsSuccess)
+{
+    Console.WriteLine($"Token: {tokenResult.Value.Token}");
+    Console.WriteLine($"Expires: {tokenResult.Value.ExpiresAt}");
+    Console.WriteLine($"Access level: {tokenResult.Value.AccessLevel}");
+    Console.WriteLine($"Scopes: {string.Join(", ", tokenResult.Value.Scopes)}");
+}
 ```
+
+#### `ProjectAccessTokenScope` (flags enum)
+
+| Value | API scope string |
+|---|---|
+| `Api` | `api` |
+| `ReadApi` | `read_api` |
+| `ReadRepository` | `read_repository` |
+| `WriteRepository` | `write_repository` |
+| `ReadRegistry` | `read_registry` |
+| `WriteRegistry` | `write_registry` |
+| `ReadPackageRegistry` | `read_package_registry` |
+| `WritePackageRegistry` | `write_package_registry` |
+| `CreateRunner` | `create_runner` |
+| `ManageRunner` | `manage_runner` |
+| `AiFeatures` | `ai_features` |
+| `K8sProxy` | `k8s_proxy` |
+| `ReadObservability` | `read_observability` |
+| `WriteObservability` | `write_observability` |
+
+Combine scopes with `|`:
+```csharp
+ProjectAccessTokenScope.WriteRepository | ProjectAccessTokenScope.ReadApi
+```
+
+#### `AccessLevel` enum
+
+| Value | Level |
+|---|---|
+| `Guest` | 10 |
+| `Reporter` | 20 |
+| `Developer` | 30 |
+| `Maintainer` | 40 (default) |
+| `Owner` | 50 |
 
 ### GroupVariableClient
 

@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-03-01
+
+### Added
+- **`ProjectClient.CreateProjectAccessToken`**: creates a project access token via the GitLab API.
+  - Default name `GL_TOKEN`, default scope `WriteRepository`, default access level `Maintainer` (40), default expiry one year from creation.
+  - `ProjectAccessTokenScope` flags enum with 14 scopes (`Api`, `ReadApi`, `WriteRepository`, `ReadRegistry`, `WriteRegistry`, `ReadPackageRegistry`, `WritePackageRegistry`, `CreateRunner`, `ManageRunner`, `AiFeatures`, `K8sProxy`, `ReadObservability`, `WriteObservability`).
+  - `AccessLevel` enum: `NoAccess(0)`, `Minimal(5)`, `Guest(10)`, `Reporter(20)`, `Developer(30)`, `Maintainer(40)`, `Owner(50)`.
+  - `GitLabProjectAccessToken` DTO: `Id`, `Name`, `Token` (creation only), `Scopes[]`, `AccessLevel`, `ExpiresAt`, `CreatedAt`, `Revoked`, `Active`.
+  - New MCP tool `gitlab_create_project_access_token`.
+- **`isHidden` parameter on `CreateOrUpdateProjectVariable`** (both library and MCP tool): sends the `hidden` field to the GitLab API, defaults to `true`. Hidden variable values are not retrievable after creation.
+  - `GitLabVariable` DTO updated with `Hidden` property.
+- 5 new unit tests covering the above.
+
+### Changed
+- `Garrard.GitLab.Library.Enums` namespace introduced for `AccessLevel` and `ProjectAccessTokenScope`.
+
+## [1.0.2] - 2026-03-01
+
+### Added
+- **`ProjectClient.CreateProjectAccessToken`**: creates a GitLab project access token with configurable name, scopes, access level and expiry.
+  - New `AccessLevel` enum: `NoAccess / Minimal / Guest / Reporter / Developer / Maintainer / Owner`
+  - New `ProjectAccessTokenScope` flags enum: 14 scopes (`Api`, `ReadApi`, `WriteRepository`, `ReadRegistry`, etc.)
+  - New `GitLabProjectAccessToken` DTO: `Id`, `Name`, `Token` (only on creation), `Scopes[]`, `AccessLevel`, `ExpiresAt`, `Active`, `Revoked`
+  - Defaults: name `GL_TOKEN`, scope `WriteRepository`, access level `Maintainer (40)`, expiry +1 year
+- **`isHidden` parameter** on `ProjectClient.CreateOrUpdateProjectVariable` (default `true`): sends `hidden: true` to the GitLab API so the variable value is concealed after creation.
+- **`Hidden` property** added to `GitLabVariable` DTO.
+- **MCP tools**: `gitlab_create_project_access_token` (accepts comma-separated scope string + int access level); `gitlab_create_or_update_project_variable` now includes `isHidden` parameter.
+- 5 new unit tests covering the above.
+
+### Changed
+- `CreateOrUpdateProjectVariable` signature: `isHidden = true` inserted before `Action<string>? onMessage` (non-breaking for callers using named parameters).
+
 ## [1.0.0] - 2025-10-25
 
 ### Added
