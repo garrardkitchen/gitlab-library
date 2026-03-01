@@ -84,7 +84,13 @@ public sealed class ProjectTools(ProjectClient projectClient)
         [Description("Expiry date in YYYY-MM-DD format (default: one year from today).")] string? expiresAt = null)
     {
         var scopeFlags = ParseScopes(scopes);
-        DateOnly? expiry = expiresAt is not null ? DateOnly.Parse(expiresAt) : null;
+        DateOnly? expiry = null;
+        if (expiresAt is not null)
+        {
+            if (!DateOnly.TryParse(expiresAt, out var parsedExpiry))
+                return $"{{\"error\": \"Invalid expiresAt date '{expiresAt}'. Use YYYY-MM-DD format.\"}}";
+            expiry = parsedExpiry;
+        }
         var result = await projectClient.CreateProjectAccessToken(
             projectId, name, scopeFlags, (AccessLevel)accessLevel, expiry);
         return ToolHelper.Serialize(result);
