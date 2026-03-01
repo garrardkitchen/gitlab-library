@@ -1,484 +1,198 @@
 # Garrard.GitLab
 
-Garrard.GitLab is a .NET library that provides operations for working with GitLab Groups and projects.
+A .NET library for working with GitLab groups, projects, variables, and repositories via the GitLab REST API.
 
 ## Installation
 
-To install `Garrard.GitLab`, you can use the NuGet package manager. Run the following command in the Package Manager Console:
-
-```powershell
-Install-Package Garrard.GitLab -Version 0.0.21
+```bash
+dotnet add package Garrard.GitLab
 ```
 
-Or add the following package reference to your project file:
+Or add directly to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="0.0.21" />
+<PackageReference Include="Garrard.GitLab" Version="1.0.0" />
 ```
 
-Or use the dotnet add command:
+## Quick Start
 
-```powershell
-dotnet add package Garrard.GitLab --version 0.0.21
-```
-
-## Usage
-
-Here is an example of how to use Garrard.GitLab in your project:
+Register the library with your DI container once at startup:
 
 ```csharp
-using Garrard.GitLab;
+using Garrard.GitLab.Library;
 
-class Program
+services.AddGarrardGitLab(opts =>
 {
-    static async Task Main(string[] args)
+    opts.Pat    = "your-gitlab-personal-access-token";  // required
+    opts.Domain = "gitlab.com";                         // optional, defaults to gitlab.com
+});
+```
+
+Then inject the client(s) you need:
+
+```csharp
+public class MyService(GroupClient groupClient, ProjectClient projectClient)
+{
+    public async Task Run()
     {
-        // Example usage of GitLab.GitOperations, GitLab.FileOperations
-
-        var projectCreation = await GitOperations.CreateGitLabProject("new-project-name", "your-gitlab-pat", "gitlab-domain", projectName =>
-            {
-                Console.WriteLine($" - {projectName} exists, establishing an available project name...");
-            }, "group-id-or-omit-to-add-to-users-namespace");
-        
-        if (projectCreation.IsFailure)
-        {
-            Console.WriteLine($"{projectCreation.Error}. Exiting...");
-            return;
-        }
-        
-        // `projectCreation.Value.Name` will have changed if couldn't use the original name
-
-        Console.WriteLine($"GitLab project `{projectCreation.Value.Name}` ({projectCreation.Value.HttpUrlToRepo}) created");
-        
-        GitOperations.DownloadGitRepository("https://github.com/yourusername/your-repo.git", "/path/to/download/to", "branch-name", "pat");
-        GitOperations.CloneGitLabProject(projectCreation.Value.HttpUrlToRepo, "/path/to/clone", "pat");
-
-        // Create a README.md then push to mainline branch
-
-        FileOperations.CreateFileWithContent("/path/to/download/to", "README.md", $"# {projectCreation.Value.Name}");
-        GitOperations.BranchCommitPushChanges("/path/to/clone", "initial commit", "main");
-
-        // Copy files from the downloaded repository to the new project
-
-        FileOperations.CopyFiles("/path/to/download/to", "/path/to/clone");
-        GitOperations.BranchCommitPushChanges("/path/to/clone", "commit message", "branch-name-or-omit-to-use-mainline-branch");
-        FileOperations.RemoveTempFolder("/path/to/download/to"); 
-        
-        // Move the project to a group
-        
-        var moveProjectToGroup = await GitOperations.TransferProjectToGroupOrNamespace(projectCreation.Value.Id, "group-id-or-namespace", "pat", "gitlab-domain");
-
-        if (moveProjectToGroup.IsFailure)
-        {
-            AnsiConsole.MarkupLine($"[red]{moveProjectToGroup.Error}[/]");
-        }
-
-        // Create or update a Group variable
-        
-        var result = await GroupVariablesOperations.CreateOrUpdateGroupVariable(
-            "1607",              // Group ID
-            "NEW_VAR",           // Variable key
-            "FOO",               // Variable value
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            "env_var",           // Variable type (optional, default: env_var)
-            false,               // Is protected (optional, default: false)
-            true,                // Is masked (optional, default: false) - HTTP API fails if used so ignored for now
-            "*",                 // Environment scope (optional, default: *)
-             Console.WriteLine
-        );
+        var result = await groupClient.FindGroups("my-team");
 
         if (result.IsSuccess)
         {
-            Console.WriteLine($"Variable created/updated successfully");
-        }
-
-        // Get a group variable
-        
-        var variable = await GroupVariablesOperations.GetGroupVariable(
-            "1607",              // Group ID
-            "NEW_VAR",           // Variable key
-            gitlabPat,           // Personal Access Token
-            gitlabDomain         // GitLab domain
-        );
-
-        if (variable.IsSuccess)
-        {
-            Console.WriteLine($"Variable value: {variable.Value.Value}");
-        }
-
-        // Search and replace example:
-        
-        FileOperations.CreateFileWithContent($"./", ".gitlab-ci.yml", $"TF_VAR_TFE_WORKSPACE_NAME: \"<enter-workload-name>\"");
-
-        var replacePlaceholderInFile = await FileOperations.ReplacePlaceholderInFile("./.gitlab-ci.yml", "TF_VAR_TFE_WORKSPACE_NAME", "\"<enter-workload-name>\"", "\"foo\"", ":", Console.WriteLine);
-
-        if (replacePlaceholderInFile.IsFailure) 
-        {
-            Console.WriteLine(replacePlaceholderInFile.Error);
-        }
-        
-        // NEW API METHODS EXAMPLES
-        
-        // Get all subgroups for a group
-        var subgroups = await GroupOperations.GetSubgroups(
-            "my-group-name",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            "name",              // Order by field (optional, default: name)
-            "asc",               // Sort direction (optional, default: asc)
-            Console.WriteLine    // Optional message handler
-        );
-        
-        if (subgroups.IsSuccess)
-        {
-            Console.WriteLine($"Found {subgroups.Value.Length} subgroups");
-            
-            foreach (var group in subgroups.Value)
-            {
-                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
-                Console.WriteLine($"  Path: {group.FullPath}");
-                Console.WriteLine($"  URL: {group.WebUrl}");
-                Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
-            }
-        }
-        
-
-        // Find groups by exact name or ID
-        var findGroups = await GroupOperations.FindGroups(
-            "my-exact-group-name",  // Name or ID to search for
-            gitlabPat,              // Personal Access Token
-            gitlabDomain,           // GitLab domain
-            "name",                 // Order by (optional)
-            "asc",                  // Sort direction (optional)
-            Console.WriteLine       // Optional message handler
-        );
-        
-        if (findGroups.IsSuccess)
-        {
-            Console.WriteLine($"Found {findGroups.Value.Length} groups with exact name match");
-            
-            foreach (var group in findGroups.Value)
-            {
-                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
-                Console.WriteLine($"  Path: {group.FullPath}");
-                Console.WriteLine($"  Parent ID: {group.ParentId}");
-            }
-        }
-        
-        // Search groups using wildcard pattern
-        var searchGroups = await GroupOperations.SearchGroups(
-            "team-",                // Search pattern
-            gitlabPat,              // Personal Access Token
-            gitlabDomain,           // GitLab domain
-            "path",                 // Order by (optional)
-            "asc",                  // Sort direction (optional)
-            Console.WriteLine       // Optional message handler
-        );
-        
-        if (searchGroups.IsSuccess)
-        {
-            Console.WriteLine($"Found {searchGroups.Value.Length} groups matching the pattern");
-            
-            foreach (var group in searchGroups.Value)
-            {
-                Console.WriteLine($"Group: {group.Name} (ID: {group.Id})");
-                Console.WriteLine($"  Path: {group.Path}");
-                Console.WriteLine($"  Full Path: {group.FullPath}");
-                Console.WriteLine($"  Has subgroups: {group.HasSubgroups}");
-            }
-        }
-        
-        // Create a new GitLab group
-        var createGroup = await GroupOperations.CreateGitLabGroup(
-            "My New Team",          // Group name
-            gitlabPat,              // Personal Access Token
-            gitlabDomain,           // GitLab domain
-            onMessage: Console.WriteLine  // Optional message handler
-        );
-        
-        if (createGroup.IsSuccess)
-        {
-            Console.WriteLine($"Created group '{createGroup.Value.Name}' with ID: {createGroup.Value.Id}");
-            Console.WriteLine($"  Path: {createGroup.Value.Path}");
-            Console.WriteLine($"  Full Path: {createGroup.Value.FullPath}");
-            Console.WriteLine($"  URL: {createGroup.Value.WebUrl}");
-        }
-        
-        // Create a subgroup under a parent group
-        var createSubgroup = await GroupOperations.CreateGitLabGroup(
-            "Backend Team",         // Subgroup name
-            gitlabPat,              // Personal Access Token
-            gitlabDomain,           // GitLab domain
-            parentId: createGroup.Value.Id,  // Parent group ID
-            onMessage: Console.WriteLine     // Optional message handler
-        );
-        
-        if (createSubgroup.IsSuccess)
-        {
-            Console.WriteLine($"Created subgroup '{createSubgroup.Value.Name}' with ID: {createSubgroup.Value.Id}");
-            Console.WriteLine($"  Parent ID: {createSubgroup.Value.ParentId}");
-            Console.WriteLine($"  Full Path: {createSubgroup.Value.FullPath}");
-        }
-        
-        // Get all projects in a group
-        var projects = await ProjectOperations.GetProjectsInGroup(
-            "my-group-name",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            true,                // Include subgroups (optional, default: true)
-            "name",              // Order by field (optional, default: name)
-            "asc",               // Sort direction (optional, default: asc)
-            Console.WriteLine    // Optional message handler
-        );
-        
-        if (projects.IsSuccess)
-        {
-            Console.WriteLine($"Found {projects.Value.Length} projects");
-            
-            foreach (var project in projects.Value)
-            {
-                Console.WriteLine($"Project: {project.Name} (ID: {project.Id})");
-                Console.WriteLine($"  Group ID: {project.GroupId}");
-                Console.WriteLine($"  Path: {project.Path}");
-                Console.WriteLine($"  Namespace: {project.Namespace.FullPath}");
-                Console.WriteLine($"  URL: {project.WebUrl}");
-                Console.WriteLine($"  Last activity: {project.LastActivityAt}");
-            }
-        }
-        
-        // Get all project variables
-        var projectVars = await ProjectOperations.GetProjectVariables(
-            projectCreation.Value.Id, // Project ID
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
-            Console.WriteLine        // Optional message handler
-        );
-        
-        if (projectVars.IsSuccess)
-        {
-            Console.WriteLine($"Found {projectVars.Value.Length} project variables");
-            
-            foreach (var projectVar in projectVars.Value)
-            {
-                Console.WriteLine($"Variable: {projectVar.Key}");
-                Console.WriteLine($"  Value: {projectVar.Value}");
-                Console.WriteLine($"  Type: {projectVar.VariableType}");
-                Console.WriteLine($"  Environment: {projectVar.EnvironmentScope}");
-            }
-        }
-        
-        // Create or update a project variable
-        var createVarResult = await ProjectOperations.CreateOrUpdateProjectVariable(
-            projectCreation.Value.Id, // Project ID
-            "API_KEY",               // Variable key
-            "secret-value-123",      // Variable value
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
-            "env_var",               // Variable type (optional, default: env_var)
-            false,                   // Is protected (optional, default: false)
-            true,                    // Is masked (optional, default: false)
-            "production",            // Environment scope (optional, default: *)
-            Console.WriteLine        // Optional message handler
-        );
-        
-        if (createVarResult.IsSuccess)
-        {
-            Console.WriteLine($"Variable {createVarResult.Value.Key} created/updated successfully");
-        }
-        
-        // Get a specific project variable
-        var projectVar = await ProjectOperations.GetProjectVariable(
-            projectCreation.Value.Id, // Project ID
-            "API_KEY",               // Variable key
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
-            "production",            // Environment scope (optional, default: *)
-            Console.WriteLine        // Optional message handler
-        );
-        
-        if (projectVar.IsSuccess)
-        {
-            Console.WriteLine($"Variable {projectVar.Value.Key} value: {projectVar.Value.Value}");
-        }
-        
-        // Delete a project variable
-        var deleteResult = await ProjectOperations.DeleteProjectVariable(
-            projectCreation.Value.Id, // Project ID
-            "API_KEY",               // Variable key
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
-            "production",            // Environment scope (optional, default: *)
-            Console.WriteLine        // Optional message handler
-        );
-        
-        if (deleteResult.IsSuccess)
-        {
-            Console.WriteLine("Variable deleted successfully");
-        }
-        
-        // NEW: Summary operations examples
-        
-        // Get a group summary with counts
-        var groupSummary = await SummaryOperations.GetGroupSummary(
-            "my-group-name",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            Console.WriteLine    // Optional message handler
-        );
-        
-        if (groupSummary.IsSuccess)
-        {
-            var summary = groupSummary.Value;
-            Console.WriteLine($"Group: {summary.Name}");
-            Console.WriteLine($"  Subgroups: {summary.SubgroupCount}");
-            Console.WriteLine($"  Projects: {summary.ProjectCount}");
-            Console.WriteLine($"  Path: {summary.FullPath}");
-        }
-        
-        // Get summaries of all projects in a group
-        var projectSummaries = await SummaryOperations.GetGroupProjectsSummary(
-            "my-group-name",     // Group ID or name
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            true,                // Include subgroups
-            Console.WriteLine    // Optional message handler
-        );
-        
-        if (projectSummaries.IsSuccess)
-        {
-            foreach (var projectSummary in projectSummaries.Value)
-            {
-                Console.WriteLine($"Project: {projectSummary.Name}");
-                Console.WriteLine($"  Group: {projectSummary.GroupName}");
-                Console.WriteLine($"  Variables: {projectSummary.VariableCount}");
-                Console.WriteLine($"  Created: {projectSummary.CreatedAt:yyyy-MM-dd}");
-                Console.WriteLine($"  Last Activity: {projectSummary.LastActivityAt:yyyy-MM-dd}");
-            }
-        }
-        
-        // Get a basic project summary (limited information without group context)
-        var projectSummary = await SummaryOperations.GetProjectSummary(
-            123,                 // Project ID
-            gitlabPat,           // Personal Access Token
-            gitlabDomain,        // GitLab domain
-            Console.WriteLine    // Optional message handler
-        );
-        
-        if (projectSummary.IsSuccess)
-        {
-            Console.WriteLine($"Project variables: {projectSummary.Value.VariableCount}");
-        // Create a new GitLab project with ProjectOperations.CreateGitLabProject
-        var newProject = await ProjectOperations.CreateGitLabProject(
-            "my-new-project",        // Project name
-            gitlabPat,               // Personal Access Token
-            gitlabDomain,            // GitLab domain
-            1234,                    // Parent group ID (optional, null for user's namespace)
-            true,                    // Enable instance runners (optional, null to use default)
-            Console.WriteLine        // Optional message handler
-        );
-        
-        if (newProject.IsSuccess)
-        {
-            Console.WriteLine($"Project created successfully!");
-            Console.WriteLine($"  ID: {newProject.Value.Id}");
-            Console.WriteLine($"  Name: {newProject.Value.Name}");
-            Console.WriteLine($"  URL: {newProject.Value.WebUrl}");
-            Console.WriteLine($"  HTTP URL: {newProject.Value.HttpUrlToRepo}");
+            foreach (var group in result.Value)
+                Console.WriteLine($"{group.Name} ({group.Id})");
         }
         else
         {
-            Console.WriteLine($"Failed to create project: {newProject.Error}");
+            Console.WriteLine($"Error: {result.Error}");
         }
     }
 }
 ```
 
-## Features
+## Configuration
 
-- Create a new GitLab project 
-  - It will create a unique project (by incrementing a number after your suggested name) if your suggested name exists
-  - It will by default add the project to your user's namespace. If you supply a groupID, it will
-    add the project to this group instead
-  - Returns a tuple of (Id, Name, HttpUrlToRepo and PathWithNamespace)
-  - Will return failure information if failed to access your GitLab account with your PAT
-- Download an existing git repository 
-  - You can provide branch name
-  - You can provide a PAT (uses oauth2)
-- Clone GitLab project
-  - You can provide a PAT (uses oauth2)
-- Copy files from cloned repo (or Project) to your new GitLab project folder (excluding the .git/ folder)
-- Branch (optional), Commit and push changes
-- Remove temporary folder
-- Create a file with contents
-- Transfer project to a different group (or namespace)
-- Get a Group variable
-- Create or update a Group variable
-- Search for a placeholder in a file and replace its values
-- Get all subgroups beneath a specific group
-  - Works with both group IDs and names
-  - Includes information about whether each subgroup has nested subgroups
-  - Automatically retrieves all subgroups across multiple pages
-  - Supports ordering and sorting
-  - Excludes any marked for deletion
-- Find groups by exact name or ID
-  - Returns exact matches for group name or path
-  - Automatically handles ID-based lookups
-  - Excludes any marked for deletion
-- Search for groups using a wildcard pattern
-  - Find all groups matching a search pattern
-  - Automatically retrieves all matching groups across multiple pages
-  - Supports ordering and sorting
-  - Excludes any marked for deletion
-- Create a new GitLab group
-  - Create top-level groups or subgroups
-  - Automatically generates valid GitLab paths from group names
-  - Optional parent group ID to create nested subgroups
-  - Returns the created group with its ID and metadata
-  - Proper resource cleanup with using statement
-- Get all projects within a group
-  - Works with both group IDs and names
-  - Retrieves detailed project information including namespace data and group ID
-  - Option to include projects from subgroups
-  - Automatically retrieves all projects across multiple pages
-  - Supports ordering and sorting
-  - Excludes any marked for deletion
-- Get all project variables
-  - Automatically retrieves all variables across multiple pages
-- Get a specific project variable
-  - Supports filtering by environment scope
-- Create or update a project variable
-  - Supports variable type (env_var or file)
-  - Options for protected and masked variables
-  - Supports environment scope
-- Delete a project variable
-  - Supports deletion with specific environment scope
-- Create a new GitLab project (ProjectOperations.CreateGitLabProject)
-  - Create a project with a specified name
-  - Optional: Add the project as a child of a parent group by providing the parent group ID
-  - Optional: Enable or disable instance runners for the project
-  - Returns complete project information including the project ID
-  - Provides informational messages during the creation process
+Options are bound from the `GitLab` configuration section. Using `appsettings.json`:
 
-## Summary Operations
+```json
+{
+  "GitLab": {
+    "Pat": "glpat-xxxxxxxxxxxxxxxxxxxx",
+    "Domain": "gitlab.mycompany.com"
+  }
+}
+```
 
-- **Group Summary**: Get comprehensive overview of a GitLab group
-  - Includes subgroup count and project count
-  - Shows basic group information and deletion status
-  - Automatically aggregates data from multiple API calls
-- **Project Summary**: Get basic information about a project (limited without group context)
-  - Includes variable count for the project
-  - Note: Full project details require knowing the group context
-- **Group Projects Summary**: Get summaries of all projects within a group
-  - Comprehensive project information including variables count
-  - Supports including projects from subgroups
-  - Shows creation date, last activity, group information
-  - Efficiently processes multiple projects in batch
+Or environment variables:
+
+```bash
+GitLab__Pat=glpat-xxxxxxxxxxxxxxxxxxxx
+GitLab__Domain=gitlab.mycompany.com
+```
+
+## Clients
+
+All methods return `Task<Result<T>>` from [CSharpFunctionalExtensions](https://github.com/vkhorikov/CSharpFunctionalExtensions) — they never throw. Check `result.IsSuccess`, `result.Value`, and `result.Error`.
+
+### GroupClient
+
+```csharp
+// Find groups by exact name or ID
+var groups = await groupClient.FindGroups("my-team");
+
+// Search groups using a partial/wildcard pattern
+var matches = await groupClient.SearchGroups("team-");
+
+// Get all subgroups beneath a group
+var subgroups = await groupClient.GetSubgroups("parent-group");
+
+// Create a top-level group
+var newGroup = await groupClient.CreateGitLabGroup("My New Team");
+
+// Create a subgroup under an existing group
+var subgroup = await groupClient.CreateGitLabGroup("Backend", parentId: 42);
+```
+
+### ProjectClient
+
+```csharp
+// Get all projects in a group (includes subgroups by default)
+var projects = await projectClient.GetProjectsInGroup("my-team");
+
+// Create a new project (optionally in a group)
+var project = await projectClient.CreateGitLabProject("my-app", groupId: 42);
+
+// Transfer a project to a different group
+var transfer = await projectClient.TransferProjectToGroupOrNamespace(projectId: 99, "target-group");
+
+// Project variables
+var vars      = await projectClient.GetProjectVariables(projectId: 99);
+var variable  = await projectClient.GetProjectVariable(99, "API_KEY");
+var upserted  = await projectClient.CreateOrUpdateProjectVariable(99, "API_KEY", "secret");
+var deleted   = await projectClient.DeleteProjectVariable(99, "API_KEY");
+```
+
+### GroupVariableClient
+
+```csharp
+// Get a group-level CI/CD variable
+var variable = await groupVariableClient.GetGroupVariable("1607", "DEPLOY_TOKEN");
+
+// Create or update a group variable
+var result = await groupVariableClient.CreateOrUpdateGroupVariable(
+    groupId:          "1607",
+    key:              "DEPLOY_TOKEN",
+    value:            "my-secret",
+    variableType:     "env_var",   // optional
+    isProtected:      false,       // optional
+    isMasked:         true,        // optional
+    environmentScope: "*"          // optional
+);
+```
+
+### SummaryClient
+
+```csharp
+// Overview of a group (subgroup count, project count)
+var groupSummary = await summaryClient.GetGroupSummary("my-team");
+
+// Summaries of all projects within a group
+var projectSummaries = await summaryClient.GetGroupProjectsSummary("my-team", includeSubgroups: true);
+
+// Summary of a single project (variable count etc.)
+var projectSummary = await summaryClient.GetProjectSummary(projectId: 99);
+```
+
+### GitClient
+
+```csharp
+// Create and clone a new GitLab project, then push an initial commit
+var project = await gitClient.CreateGitLabProject("my-app", groupId: 42);
+gitClient.DownloadGitRepository("https://github.com/org/template.git", "/tmp/template", "main");
+gitClient.CloneGitLabProject(project.Value.HttpUrlToRepo, "/tmp/new-project");
+gitClient.BranchCommitPushChanges("/tmp/new-project", "initial commit", "main");
+
+// Transfer a project
+await gitClient.TransferProjectToGroupOrNamespace(project.Value.Id, "target-group");
+```
+
+### FileClient
+
+`FileClient` has no dependencies and can be instantiated directly (`new FileClient()`) or injected.
+
+```csharp
+// Create a file
+fileClient.CreateFileWithContent("/tmp/new-project", "README.md", "# My App");
+
+// Copy files between directories (excludes .git/)
+fileClient.CopyFiles("/tmp/template", "/tmp/new-project");
+
+// Replace a placeholder value in a file
+var result = await fileClient.ReplacePlaceholderInFile(
+    "./.gitlab-ci.yml",
+    "WORKSPACE_NAME",
+    "\"<enter-workload-name>\"",
+    "\"my-workspace\"",
+    ":"
+);
+
+// Clean up
+fileClient.RemoveTempFolder("/tmp/template");
+```
+
+## Progress callbacks
+
+All async methods accept an optional `Action<string>? onMessage` parameter for progress output:
+
+```csharp
+var result = await groupClient.GetSubgroups("my-team", onMessage: Console.WriteLine);
+```
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/garrardkitchen/gitlab-library).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/garrardkitchen/gitlab-library/blob/feat/kitcheng/rename/LICENSE) file for more details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/garrardkitchen/gitlab-library/blob/main/LICENSE) file for details.
+
