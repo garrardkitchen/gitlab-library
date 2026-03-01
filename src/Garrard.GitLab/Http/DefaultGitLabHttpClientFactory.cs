@@ -1,19 +1,24 @@
-using System.Net.Http.Headers;
-
 namespace Garrard.GitLab.Http;
 
 /// <summary>
-/// Default implementation of <see cref="IGitLabHttpClientFactory"/> that creates
-/// a new <see cref="HttpClient"/> with the PAT set as a Bearer token.
+/// Default implementation of <see cref="IGitLabHttpClientFactory"/> that delegates to
+/// <see cref="IHttpClientFactory"/> for connection-pooled, PAT-authenticated clients.
+/// The named client (<see cref="ClientName"/>) is registered by
+/// <see cref="ServiceCollectionExtensions.AddGarrardGitLab"/>.
 /// </summary>
 public sealed class DefaultGitLabHttpClientFactory : IGitLabHttpClientFactory
 {
-    /// <inheritdoc />
-    public HttpClient CreateClient(string pat)
+    /// <summary>Name of the named HTTP client registered with <see cref="IHttpClientFactory"/>.</summary>
+    public const string ClientName = "gitlab";
+
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    /// <param name="httpClientFactory">The ASP.NET Core / Microsoft.Extensions.Http factory.</param>
+    public DefaultGitLabHttpClientFactory(IHttpClientFactory httpClientFactory)
     {
-        var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", pat);
-        return client;
+        _httpClientFactory = httpClientFactory;
     }
+
+    /// <inheritdoc />
+    public HttpClient CreateClient() => _httpClientFactory.CreateClient(ClientName);
 }

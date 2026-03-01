@@ -29,7 +29,7 @@ public class GroupOperationsTests
             });
 
         var factoryMock = new Mock<IGitLabHttpClientFactory>();
-        factoryMock.Setup(f => f.CreateClient(It.IsAny<string>()))
+        factoryMock.Setup(f => f.CreateClient())
                    .Returns(new HttpClient(handler.Object));
         return factoryMock.Object;
     }

@@ -1,4 +1,7 @@
+using System.Net.Http.Headers;
 using Garrard.GitLab.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Garrard.GitLab.Tests;
 
@@ -8,25 +11,68 @@ namespace Garrard.GitLab.Tests;
 public class HttpClientFactoryTests
 {
     [Fact]
-    public void DefaultGitLabHttpClientFactory_CreateClient_SetsAuthorizationHeader()
+    public void DefaultGitLabHttpClientFactory_CreateClient_DelegatesToNamedInnerFactory()
     {
-        var factory = new DefaultGitLabHttpClientFactory();
-        var client = factory.CreateClient("my-secret-token");
+        var mockFactory = new Mock<IHttpClientFactory>();
+        mockFactory
+            .Setup(f => f.CreateClient(DefaultGitLabHttpClientFactory.ClientName))
+            .Returns(new HttpClient());
 
-        Assert.NotNull(client.DefaultRequestHeaders.Authorization);
-        Assert.Equal("Bearer", client.DefaultRequestHeaders.Authorization!.Scheme);
-        Assert.Equal("my-secret-token", client.DefaultRequestHeaders.Authorization.Parameter);
+        var factory = new DefaultGitLabHttpClientFactory(mockFactory.Object);
+        _ = factory.CreateClient();
+
+        mockFactory.Verify(f => f.CreateClient(DefaultGitLabHttpClientFactory.ClientName), Times.Once);
     }
 
     [Fact]
-    public void DefaultGitLabHttpClientFactory_CreateClient_DifferentPats_ReturnDistinctClients()
+    public void AddGarrardGitLab_RegistersIGitLabHttpClientFactory()
     {
-        var factory = new DefaultGitLabHttpClientFactory();
-        var client1 = factory.CreateClient("token-a");
-        var client2 = factory.CreateClient("token-b");
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts =>
+        {
+            opts.Pat = "test-pat";
+            opts.Domain = "gitlab.example.com";
+        });
 
-        Assert.NotEqual(
-            client1.DefaultRequestHeaders.Authorization!.Parameter,
-            client2.DefaultRequestHeaders.Authorization!.Parameter);
+        var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<IGitLabHttpClientFactory>();
+
+        Assert.IsType<DefaultGitLabHttpClientFactory>(factory);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_NamedHttpClient_HasBearerAuthAndBaseAddress()
+    {
+        const string pat = "glpat-test-token";
+        const string domain = "gitlab.mycompany.com";
+
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(opts =>
+        {
+            opts.Pat = pat;
+            opts.Domain = domain;
+        });
+
+        var provider = services.BuildServiceProvider();
+        var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+        var client = httpClientFactory.CreateClient(DefaultGitLabHttpClientFactory.ClientName);
+
+        Assert.Equal(new Uri($"https://{domain}/api/v4/"), client.BaseAddress);
+        Assert.Equal("Bearer", client.DefaultRequestHeaders.Authorization!.Scheme);
+        Assert.Equal(pat, client.DefaultRequestHeaders.Authorization.Parameter);
+    }
+
+    [Fact]
+    public void AddGarrardGitLab_WithoutOptions_StillRegistersServices()
+    {
+        // When no configureOptions delegate is provided, options should come from
+        // the host configuration (env vars / appsettings), not from this call.
+        var services = new ServiceCollection();
+        services.AddGarrardGitLab(); // no delegate — options resolved from config at runtime
+
+        var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<IGitLabHttpClientFactory>();
+
+        Assert.IsType<DefaultGitLabHttpClientFactory>(factory);
     }
 }
