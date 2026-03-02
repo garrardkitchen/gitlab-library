@@ -57,6 +57,18 @@ public class MyService(ProjectClient projectClient, GroupClient groupClient)
         // Find a group
         var groups = await groupClient.FindGroups("my-team");
 
+        // Search projects by partial name or namespace (paginated)
+        var search = await projectClient.SearchProjects(search: "my-app", page: 1, perPage: 20);
+        if (search.IsSuccess)
+        {
+            Console.WriteLine($"Page {search.Value.Page}/{search.Value.TotalPages} — {search.Value.TotalItems} total");
+            foreach (var p in search.Value.Items)
+                Console.WriteLine($"  {p.PathWithNamespace} (ID: {p.Id})");
+        }
+
+        // Look up a project by exact ID
+        var byId = await projectClient.SearchProjects(id: 99);
+
         // Create a project access token
         var token = await projectClient.CreateProjectAccessToken(
             "99",
@@ -160,7 +172,7 @@ The server is then reachable at `http://localhost:8080/mcp`. Pass `Authorization
 
 ---
 
-### Available MCP Tools (25 tools)
+### Available MCP Tools (26 tools)
 
 | Category | Tool Name | Description |
 |----------|-----------|-------------|
@@ -168,6 +180,7 @@ The server is then reachable at `http://localhost:8080/mcp`. Pass `Authorization
 | Groups | `gitlab_find_groups` | Find groups by exact name or ID |
 | Groups | `gitlab_search_groups` | Search groups with wildcard pattern |
 | Groups | `gitlab_create_group` | Create a new GitLab group |
+| Projects | `gitlab_search_projects` | Find projects by partial name/namespace or exact ID (paginated) |
 | Projects | `gitlab_get_projects_in_group` | List projects in a group |
 | Projects | `gitlab_get_project_variables` | Get all variables for a project |
 | Projects | `gitlab_get_project_variable` | Get a specific project variable |

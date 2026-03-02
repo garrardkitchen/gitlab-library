@@ -199,4 +199,136 @@ public class ProjectOperationsTests
         Assert.True(result.IsSuccess);
         Assert.True(result.Value.Hidden);
     }
+
+    // ── SearchProjects ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SearchProjects_NoCriteria_ReturnsFailure()
+    {
+        var client = new ProjectClient(
+            HttpTestHelpers.CreateMockFactory(HttpStatusCode.OK, "[]").Object,
+            Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects();
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("search criterion", result.Error);
+    }
+
+    [Fact]
+    public async Task SearchProjects_ById_ReturnsSuccess()
+    {
+        var projectJson = JsonSerializer.Serialize(new
+        {
+            id = 42,
+            name = "my-project",
+            description = "",
+            web_url = "https://gitlab.example.com/group/my-project",
+            ssh_url_to_repo = "",
+            http_url_to_repo = "",
+            path = "my-project",
+            path_with_namespace = "group/my-project",
+            @namespace = new { id = 5, name = "group", path = "group", kind = "group", full_path = "group" },
+            created_at = DateTime.UtcNow.ToString("o"),
+            last_activity_at = DateTime.UtcNow.ToString("o"),
+            marked_for_deletion_at = (string?)null
+        });
+
+        var factory = HttpTestHelpers.CreateMockFactory(HttpStatusCode.OK, projectJson);
+        var client = new ProjectClient(factory.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects(id: 42);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value.Items);
+        Assert.Equal(42, result.Value.Items[0].Id);
+        Assert.Equal("my-project", result.Value.Items[0].Name);
+        Assert.Equal(1, result.Value.TotalPages);
+    }
+
+    [Fact]
+    public async Task SearchProjects_ById_NotFound_ReturnsFailure()
+    {
+        var factory = HttpTestHelpers.CreateMockFactory(HttpStatusCode.NotFound, "{\"message\":\"404 Not Found\"}");
+        var client = new ProjectClient(factory.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects(id: 9999);
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("404", result.Error);
+    }
+
+    [Fact]
+    public async Task SearchProjects_ByName_ReturnsPaged()
+    {
+        var projectsJson = JsonSerializer.Serialize(new[]
+        {
+            new { id = 1, name = "foo-api", description = "", web_url = "", ssh_url_to_repo = "",
+                  http_url_to_repo = "", path = "foo-api", path_with_namespace = "ns/foo-api",
+                  @namespace = new { id = 1, name = "ns", path = "ns", kind = "group", full_path = "ns" },
+                  created_at = DateTime.UtcNow.ToString("o"), last_activity_at = DateTime.UtcNow.ToString("o"),
+                  marked_for_deletion_at = (string?)null },
+            new { id = 2, name = "foo-web", description = "", web_url = "", ssh_url_to_repo = "",
+                  http_url_to_repo = "", path = "foo-web", path_with_namespace = "ns/foo-web",
+                  @namespace = new { id = 1, name = "ns", path = "ns", kind = "group", full_path = "ns" },
+                  created_at = DateTime.UtcNow.ToString("o"), last_activity_at = DateTime.UtcNow.ToString("o"),
+                  marked_for_deletion_at = (string?)null }
+        });
+
+        var handler = new Moq.Mock<System.Net.Http.HttpMessageHandler>(Moq.MockBehavior.Loose);
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(projectsJson, System.Text.Encoding.UTF8, "application/json"),
+                Headers = { { "X-Total", "2" }, { "X-Total-Pages", "1" } }
+            });
+
+        var factoryMock = new Moq.Mock<IGitLabHttpClientFactory>();
+        factoryMock.Setup(f => f.CreateClient()).Returns(new HttpClient(handler.Object));
+
+        var client = new ProjectClient(factoryMock.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects(search: "foo", page: 1, perPage: 20);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.Items.Length);
+        Assert.Equal(2, result.Value.TotalItems);
+        Assert.Equal(1, result.Value.TotalPages);
+        Assert.Equal(1, result.Value.Page);
+    }
+
+    [Fact]
+    public async Task SearchProjects_ByName_EmptyResults_ReturnsEmptyPage()
+    {
+        var factory = HttpTestHelpers.CreateMockFactory(HttpStatusCode.OK, "[]");
+        var client = new ProjectClient(factory.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects(search: "nonexistent-xyz");
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value.Items);
+        Assert.Equal(0, result.Value.TotalItems);
+    }
+
+    [Fact]
+    public async Task SearchProjects_ApiFailure_ReturnsFailure()
+    {
+        var factory = HttpTestHelpers.CreateMockFactory(HttpStatusCode.Unauthorized, "{\"message\":\"401 Unauthorized\"}");
+        var client = new ProjectClient(factory.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        var result = await client.SearchProjects(search: "anything");
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("401", result.Error);
+    }
+
+    [Fact]
+    public async Task SearchProjects_InvalidDomain_ReturnsFailure()
+    {
+        var result = await CreateInvalidDomainClient().SearchProjects(search: "test");
+        Assert.True(result.IsFailure);
+    }
 }

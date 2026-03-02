@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-03-02
+
 ### Added
-- **Docker image** (`garrardkitchen/gitlab-mcp`): the MCP server is now published to [Docker Hub](https://hub.docker.com/r/garrardkitchen/gitlab-mcp) on every semver tag.
-  - Multi-stage `Dockerfile` in `src/Garrard.GitLab.McpServer/` based on `mcr.microsoft.com/dotnet/aspnet:10.0`.
-  - New GitHub Actions workflow (`.github/workflows/docker.yml`) builds and pushes `garrardkitchen/gitlab-mcp:<version>` and `:latest`. Requires `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets in the `docker-production` environment.
-  - **stdio transport** (Claude Desktop): `docker run --rm -i -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
-  - **HTTP streaming transport**: `docker run --rm -p 8080:8080 -e MCP_TRANSPORT=http -e MCP_API_KEY=... -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
-- Updated `README.md` with Docker Hub badge, Docker usage examples, and CI/CD section.
+- **`ProjectClient.SearchProjects`**: find projects by partial name/namespace (paginated) or by exact numeric ID.
+  - Parameters: `search` (partial name/namespace), `id` (exact ID), `page`, `perPage` (1–100), `searchNamespaces` (default `true`).
+  - Returns `Result<PagedResult<GitLabProject>>` with `Items`, `Page`, `PerPage`, `TotalItems`, `TotalPages` populated from GitLab `X-Total` / `X-Total-Pages` response headers.
+- **`PagedResult<T>` DTO**: generic paginated wrapper reusable across future paged endpoints.
+- **`path_with_namespace` field** added to `GitLabProject` DTO (e.g. `group/my-project`).
+- **MCP tool `gitlab_search_projects`**: accepts `search`, `id`, `page`, `perPage`, `searchNamespaces`; returns structured paginated JSON.
+- **Docker multi-arch image**: `garrardkitchen/gitlab-mcp` now ships manifests for both `linux/amd64` and `linux/arm64` (Apple Silicon / AWS Graviton).
+- 7 new unit tests covering `SearchProjects` (by ID, by name, pagination, empty results, API failure, invalid domain, no criteria).
+
+### Fixed
+- Dockerfile: added `COPY LICENSE ./` so the `LICENSE` asset referenced in `Garrard.GitLab.csproj` is present during Docker builds.
 
 ## [1.0.2] - 2026-03-01
 
@@ -26,26 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New MCP tool `gitlab_create_project_access_token`.
 - **`isHidden` parameter on `CreateOrUpdateProjectVariable`** (both library and MCP tool): sends the `hidden` field to the GitLab API, defaults to `true`. Hidden variable values are not retrievable after creation.
   - `GitLabVariable` DTO updated with `Hidden` property.
+- **Docker Hub publishing** (`garrardkitchen/gitlab-mcp`): MCP server published on every semver tag via `.github/workflows/docker.yml`.
+  - **stdio** (Claude Desktop): `docker run --rm -i -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
+  - **HTTP streaming**: `docker run --rm -p 8080:8080 -e MCP_TRANSPORT=http -e MCP_API_KEY=... -e GL_PAT=... -e GL_DOMAIN=... garrardkitchen/gitlab-mcp:latest`
 - 5 new unit tests covering the above.
 
 ### Changed
 - `Garrard.GitLab.Library.Enums` namespace introduced for `AccessLevel` and `ProjectAccessTokenScope`.
-
-## [1.0.2] - 2026-03-01
-
-### Added
-- **`ProjectClient.CreateProjectAccessToken`**: creates a GitLab project access token with configurable name, scopes, access level and expiry.
-  - New `AccessLevel` enum: `NoAccess / Minimal / Guest / Reporter / Developer / Maintainer / Owner`
-  - New `ProjectAccessTokenScope` flags enum: 14 scopes (`Api`, `ReadApi`, `WriteRepository`, `ReadRegistry`, etc.)
-  - New `GitLabProjectAccessToken` DTO: `Id`, `Name`, `Token` (only on creation), `Scopes[]`, `AccessLevel`, `ExpiresAt`, `Active`, `Revoked`
-  - Defaults: name `GL_TOKEN`, scope `WriteRepository`, access level `Maintainer (40)`, expiry +1 year
-- **`isHidden` parameter** on `ProjectClient.CreateOrUpdateProjectVariable` (default `true`): sends `hidden: true` to the GitLab API so the variable value is concealed after creation.
-- **`Hidden` property** added to `GitLabVariable` DTO.
-- **MCP tools**: `gitlab_create_project_access_token` (accepts comma-separated scope string + int access level); `gitlab_create_or_update_project_variable` now includes `isHidden` parameter.
-- 5 new unit tests covering the above.
-
-### Changed
-- `CreateOrUpdateProjectVariable` signature: `isHidden = true` inserted before `Action<string>? onMessage` (non-breaking for callers using named parameters).
+- `CreateOrUpdateProjectVariable` signature: `isHidden = true` inserted before `Action<string>? onMessage` (non-breaking for named-parameter callers).
 
 ## [1.0.0] - 2025-10-25
 
