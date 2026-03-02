@@ -41,3 +41,13 @@ jobs:
             garrardkitchen/gitlab-mcp:${{ steps.version.outputs.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      - name: Update Docker Hub Description with Changelog
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: garrardkitchen/gitlab-mcp
+          readme-filepath: ./CHANGELOG.md
+          short-description: " The MCP server exposes the Garrard.GitLab library as a set of AI-callable tools,  allowing LLM clients (like Claude Desktop or VS Code Copilot) to automate GitLab operations — such as creating groups/projects, managing variables, cloning repositories, and creating access tokens — via natural language. It supports both stdio and HTTP transports, making it compatible with any MCP-compliant AI host."
+
