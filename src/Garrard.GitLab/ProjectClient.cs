@@ -213,6 +213,9 @@ public sealed class ProjectClient
 
         try
         {
+            // GitLab requires a variable to be masked before it can be hidden.
+            if (isHidden) isMasked = true;
+
             onMessage?.Invoke($"Checking if variable {variableKey} exists in project {projectId}...");
 
             var getResult = await GetProjectVariable(projectId, variableKey, environmentScope);

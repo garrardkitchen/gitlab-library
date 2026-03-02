@@ -168,7 +168,7 @@ public class ProjectOperationsTests
             value = "secret",
             variable_type = "env_var",
             @protected = false,
-            masked = false,
+            masked = true,   // GitLab always returns masked=true when hidden=true
             hidden = true,
             environment_scope = "*"
         });
@@ -198,6 +198,49 @@ public class ProjectOperationsTests
 
         Assert.True(result.IsSuccess);
         Assert.True(result.Value.Hidden);
+        Assert.True(result.Value.Masked);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateProjectVariable_HiddenForcesIsMasked_SentInRequest()
+    {
+        string? capturedBody = null;
+
+        var varJson = JsonSerializer.Serialize(new
+        {
+            key = "MY_VAR", value = "val", variable_type = "env_var",
+            @protected = false, masked = true, hidden = true, environment_scope = "*"
+        });
+
+        var handler = new Moq.Mock<System.Net.Http.HttpMessageHandler>(Moq.MockBehavior.Loose);
+        var callCount = 0;
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Returns((HttpRequestMessage req, CancellationToken _) =>
+            {
+                callCount++;
+                if (callCount == 2)
+                    capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                var resp = callCount == 1
+                    ? new HttpResponseMessage(HttpStatusCode.NotFound)
+                    : new HttpResponseMessage(HttpStatusCode.OK)
+                      { Content = new StringContent(varJson, System.Text.Encoding.UTF8, "application/json") };
+                return Task.FromResult(resp);
+            });
+
+        var factoryMock = new Moq.Mock<IGitLabHttpClientFactory>();
+        factoryMock.Setup(f => f.CreateClient()).Returns(new HttpClient(handler.Object));
+
+        var client = new ProjectClient(factoryMock.Object, Options.Create(new GitLabOptions { Pat = Pat, Domain = Domain }));
+
+        // Pass isHidden=true but isMasked=false — library should promote masked to true
+        await client.CreateOrUpdateProjectVariable("99", "MY_VAR", "val", isMasked: false, isHidden: true);
+
+        Assert.NotNull(capturedBody);
+        Assert.Contains("masked=true", capturedBody);
+        Assert.Contains("hidden=true", capturedBody);
     }
 
     // ── SearchProjects ──────────────────────────────────────────────────────
