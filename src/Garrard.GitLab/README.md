@@ -11,19 +11,19 @@ dotnet add package Garrard.GitLab
 Install a specific version:
 
 ```bash
-dotnet add package Garrard.GitLab --version 1.0.2
+dotnet add package Garrard.GitLab --version 1.0.3
 ```
 
 File-based Apps:
 
 ```bash
-#:package Garrard.GitLab@1.0.2
+#:package Garrard.GitLab@1.0.3
 ```
 
 Or add directly to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="1.0.2" />
+<PackageReference Include="Garrard.GitLab" Version="1.0.3" />
 ```
 
 ## Quick Start
@@ -123,6 +123,18 @@ var vars      = await projectClient.GetProjectVariables(projectId: 99);
 var variable  = await projectClient.GetProjectVariable(99, "API_KEY");
 var upserted  = await projectClient.CreateOrUpdateProjectVariable(99, "API_KEY", "secret");
 var deleted   = await projectClient.DeleteProjectVariable(99, "API_KEY");
+
+// Search projects by partial name or namespace (paginated)
+var page1 = await projectClient.SearchProjects(search: "my-app", page: 1, perPage: 20);
+if (page1.IsSuccess)
+{
+    Console.WriteLine($"Page {page1.Value.Page} of {page1.Value.TotalPages} ({page1.Value.TotalItems} total)");
+    foreach (var p in page1.Value.Items)
+        Console.WriteLine($"  {p.PathWithNamespace} (ID: {p.Id})");
+}
+
+// Look up a project by exact ID
+var byId = await projectClient.SearchProjects(id: 99);
 
 // Create a project access token
 var tokenResult = await projectClient.CreateProjectAccessToken(
