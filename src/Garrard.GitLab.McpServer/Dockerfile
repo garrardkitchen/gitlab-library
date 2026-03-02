@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY git-tool.sln ./
+COPY LICENSE ./
 COPY src/Garrard.GitLab/Garrard.GitLab.csproj src/Garrard.GitLab/
 COPY src/Garrard.GitLab.McpServer/Garrard.GitLab.McpServer.csproj src/Garrard.GitLab.McpServer/
 COPY src/Garrard.GitLab.Sample/Garrard.GitLab.Sample.csproj src/Garrard.GitLab.Sample/
