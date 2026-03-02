@@ -466,6 +466,112 @@ public sealed class ProjectClient
         }
     }
 
+    /// <summary>
+    /// Searches for projects by partial name/namespace or looks up a project by exact ID.
+    /// When searching by name, results are paginated — use <paramref name="page"/> and
+    /// <paramref name="perPage"/> to walk through pages.
+    /// </summary>
+    public async Task<Result<PagedResult<GitLabProject>>> SearchProjects(
+        string? search = null,
+        int? id = null,
+        int page = 1,
+        int perPage = 20,
+        bool searchNamespaces = true,
+        Action<string>? onMessage = null)
+    {
+        if (search is null && id is null)
+            return Result.Failure<PagedResult<GitLabProject>>(
+                "Provide at least one search criterion: 'search' (partial name/namespace) or 'id'.");
+
+        var client = _factory.CreateClient();
+
+        try
+        {
+            if (id.HasValue)
+            {
+                onMessage?.Invoke($"Looking up project by ID {id.Value}...");
+
+                var url = $"https://{_opts.Domain}/api/v4/projects/{id.Value}";
+                var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return Result.Failure<PagedResult<GitLabProject>>(
+                        $"Project not found: {response.StatusCode}. {error}");
+                }
+
+                var body = await response.Content.ReadAsStringAsync();
+                var project = JsonSerializer.Deserialize<GitLabProject>(body);
+
+                if (project is null)
+                    return Result.Failure<PagedResult<GitLabProject>>("Failed to deserialize project data.");
+
+                onMessage?.Invoke($"Found project '{project.Name}' (ID: {project.Id})");
+                return Result.Success(new PagedResult<GitLabProject>
+                {
+                    Items = [project],
+                    Page = 1,
+                    PerPage = 1,
+                    TotalItems = 1,
+                    TotalPages = 1
+                });
+            }
+
+            perPage = Math.Clamp(perPage, 1, 100);
+            page = Math.Max(1, page);
+
+            onMessage?.Invoke($"Searching projects matching '{search}' (page {page}, per_page {perPage})...");
+
+            var searchUrl = $"https://{_opts.Domain}/api/v4/projects" +
+                            $"?search={Uri.EscapeDataString(search!)}" +
+                            $"&search_namespaces={searchNamespaces.ToString().ToLower()}" +
+                            $"&page={page}&per_page={perPage}";
+
+            var searchResponse = await client.GetAsync(searchUrl);
+
+            if (!searchResponse.IsSuccessStatusCode)
+            {
+                var error = await searchResponse.Content.ReadAsStringAsync();
+                return Result.Failure<PagedResult<GitLabProject>>(
+                    $"Search failed: {searchResponse.StatusCode}. {error}");
+            }
+
+            var responseBody = await searchResponse.Content.ReadAsStringAsync();
+            var projects = JsonSerializer.Deserialize<List<GitLabProject>>(responseBody);
+
+            if (projects is null)
+                return Result.Failure<PagedResult<GitLabProject>>("Failed to deserialize search results.");
+
+            int totalItems = projects.Count;
+            int totalPages = 1;
+
+            if (searchResponse.Headers.TryGetValues("X-Total", out var totalHeader))
+                int.TryParse(totalHeader.FirstOrDefault(), out totalItems);
+
+            if (searchResponse.Headers.TryGetValues("X-Total-Pages", out var totalPagesHeader))
+                int.TryParse(totalPagesHeader.FirstOrDefault(), out totalPages);
+
+            if (totalPages < 1) totalPages = 1;
+
+            onMessage?.Invoke(
+                $"Found {projects.Count} project(s) on page {page} of {totalPages} (total: {totalItems})");
+
+            return Result.Success(new PagedResult<GitLabProject>
+            {
+                Items = projects.Where(p => !p.IsMarkedForDeletion).ToArray(),
+                Page = page,
+                PerPage = perPage,
+                TotalItems = totalItems,
+                TotalPages = totalPages
+            });
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<PagedResult<GitLabProject>>($"An error occurred: {ex.Message}");
+        }
+    }
+
     private static string[] ScopesToStrings(ProjectAccessTokenScope scopes)
     {
         var result = new List<string>();

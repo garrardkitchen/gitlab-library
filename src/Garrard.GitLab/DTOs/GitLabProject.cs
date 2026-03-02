@@ -49,6 +49,9 @@ public class GitLabProject
     [JsonPropertyName("path")]
     public string Path { get; init; } = string.Empty;
 
+    [JsonPropertyName("path_with_namespace")]
+    public string PathWithNamespace { get; init; } = string.Empty;
+
     [JsonPropertyName("namespace")]
     public GitLabNamespace Namespace { get; init; } = new();
 

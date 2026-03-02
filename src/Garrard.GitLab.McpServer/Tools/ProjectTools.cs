@@ -96,6 +96,21 @@ public sealed class ProjectTools(ProjectClient projectClient)
         return ToolHelper.Serialize(result);
     }
 
+    [McpServerTool(Name = "gitlab_search_projects"), Description("Finds projects by partial name or namespace (search) or by exact project ID. Returns paginated results when searching by name.")]
+    public async Task<string> SearchProjects(
+        [Description("Partial project name or namespace path to search (e.g. 'my-app' or 'group/my-app'). Omit if using id.")] string? search = null,
+        [Description("Exact numeric project ID for direct lookup. Omit if using search.")] int? id = null,
+        [Description("Page number when searching by name (default: 1).")] int page = 1,
+        [Description("Results per page, max 100 (default: 20).")] int perPage = 20,
+        [Description("Also match projects whose namespace path contains the search term (default: true).")] bool searchNamespaces = true)
+    {
+        if (search is null && id is null)
+            return "{\"error\": \"Provide at least one search criterion: 'search' (partial name/namespace) or 'id'.\"}";
+
+        var result = await projectClient.SearchProjects(search, id, page, perPage, searchNamespaces);
+        return ToolHelper.Serialize(result);
+    }
+
     private static ProjectAccessTokenScope ParseScopes(string scopes)
     {
         var flags = ProjectAccessTokenScope.ReadRepository; // safe fallback
