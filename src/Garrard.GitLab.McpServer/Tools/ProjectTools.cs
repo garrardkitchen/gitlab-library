@@ -47,7 +47,7 @@ public sealed class ProjectTools(ProjectClient projectClient)
         [Description("Whether the variable is protected (default: false).")] bool isProtected = false,
         [Description("Whether the variable is masked (default: false).")] bool isMasked = false,
         [Description("Environment scope (default: *).")] string? environmentScope = "*",
-        [Description("Whether the variable value is hidden after creation (default: true).")] bool isHidden = true)
+        [Description("Whether the variable value is hidden after creation (default: true). Hidden variables are automatically masked.")] bool isHidden = true)
     {
         var result = await projectClient.CreateOrUpdateProjectVariable(
             projectId, variableKey, variableValue,
