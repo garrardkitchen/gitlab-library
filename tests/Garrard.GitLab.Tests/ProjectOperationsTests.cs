@@ -240,7 +240,9 @@ public class ProjectOperationsTests
 
         Assert.NotNull(capturedBody);
         Assert.Contains("masked=true", capturedBody);
-        Assert.Contains("hidden=true", capturedBody);
+        Assert.Contains("masked_and_hidden=true", capturedBody);
+        // "hidden" must not appear as a standalone field (masked_and_hidden is fine)
+        Assert.DoesNotContain("&hidden=", capturedBody);
     }
 
     // ── SearchProjects ──────────────────────────────────────────────────────

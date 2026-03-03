@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-03-03
+
+### Fixed
+- **`CreateOrUpdateProjectVariable`**: replaced the unsupported standalone `hidden` request field with `masked_and_hidden` (the correct GitLab API field per [docs](https://docs.gitlab.com/api/project_level_variables/#create-a-variable)). When `isHidden = true` the request now sends `masked=true` and `masked_and_hidden=true`. The `Hidden` property on `GitLabVariable` DTO is unchanged — GitLab still returns `hidden` in response bodies.
+- **`CreateOrUpdateProjectVariable`**: `isHidden = true` now automatically promotes `isMasked` to `true` (GitLab requires a variable to be masked before it can be hidden).
+
 ## [1.0.3] - 2026-03-02
 
 ### Added

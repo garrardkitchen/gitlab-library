@@ -11,7 +11,7 @@ dotnet add package Garrard.GitLab
 Install a specific version:
 
 ```bash
-dotnet add package Garrard.GitLab --version 1.0.7
+dotnet add package Garrard.GitLab --version 1.0.9
 ```
 
 File-based Apps:
@@ -23,7 +23,7 @@ File-based Apps:
 Or add directly to your project file:
 
 ```xml
-<PackageReference Include="Garrard.GitLab" Version="1.0.7" />
+<PackageReference Include="Garrard.GitLab" Version="1.0.9" />
 ```
 
 ## Quick Start

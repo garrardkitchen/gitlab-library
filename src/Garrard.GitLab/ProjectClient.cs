@@ -231,7 +231,7 @@ public sealed class ProjectClient
                 new("variable_type", variableType),
                 new("protected", isProtected.ToString().ToLower()),
                 new("masked", isMasked.ToString().ToLower()),
-                new("hidden", isHidden.ToString().ToLower())
+                new("masked_and_hidden", isHidden.ToString().ToLower())
             };
 
             if (environmentScope != null)
